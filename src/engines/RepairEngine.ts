@@ -13,6 +13,9 @@ export interface RepairResult {
   domChanges: string[];
 }
 
+// Store references to added event listeners for removal during reset
+const addedListeners = new Map<HTMLElement, { event: string; handler: EventListener }[]>();
+
 /**
  * Applies the repair for Mouse-Only Activation defect.
  * Adds keyboard event handlers so Enter and Space trigger click().
@@ -32,14 +35,20 @@ export function repairMouseOnlyActivation(element: HTMLElement): RepairResult {
   }
 
   // Add keyboard event handler
-  const keydownHandler = (e: KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
+  const keydownHandler = (e: Event) => {
+    const keyEvent = e as KeyboardEvent;
+    if (keyEvent.key === 'Enter' || keyEvent.key === ' ') {
+      keyEvent.preventDefault();
       element.click();
     }
   };
 
-  // Store handler reference for potential removal later
+  // Store handler reference for removal later
+  if (!addedListeners.has(element)) {
+    addedListeners.set(element, []);
+  }
+  addedListeners.get(element)!.push({ event: 'keydown', handler: keydownHandler });
+  
   element.dataset.keyquestRepaired = 'mouse-only';
   element.addEventListener('keydown', keydownHandler);
   domChanges.push('Added keydown listener for Enter/Space keys');
@@ -171,5 +180,70 @@ export function applyRepair(
         message: `Unknown defect type: ${defectType}`,
         domChanges: [],
       };
+  }
+}
+
+/**
+ * Resets a single repaired element back to its defective state.
+ */
+export function resetRepair(defectType: DefectType, element: HTMLElement): void {
+  if (!element) return;
+
+  switch (defectType) {
+    case 'invisible-focus':
+      element.classList.remove('keyquest-focus-repaired');
+      delete element.dataset.keyquestRepaired;
+      break;
+
+    case 'mouse-only-activation': {
+      // Remove added event listeners
+      const listeners = addedListeners.get(element);
+      if (listeners) {
+        for (const { event, handler } of listeners) {
+          element.removeEventListener(event, handler);
+        }
+        addedListeners.delete(element);
+      }
+      // Remove added attributes
+      element.removeAttribute('role');
+      delete element.dataset.keyquestRepaired;
+      break;
+    }
+
+    case 'missing-accessible-name':
+      element.removeAttribute('aria-label');
+      delete element.dataset.keyquestRepaired;
+      break;
+
+    case 'insufficient-contrast':
+      // Restore original color if stored
+      if (element.dataset.originalColor) {
+        element.style.color = element.dataset.originalColor;
+        delete element.dataset.originalColor;
+      } else {
+        element.style.removeProperty('color');
+      }
+      delete element.dataset.keyquestRepaired;
+      break;
+  }
+}
+
+/**
+ * Resets all repairs for all defect types.
+ * Selectors map to the data-testid values used in MidnightCheckout.
+ */
+export function resetAllRepairs(): void {
+  const defectSelectors: Record<DefectType, string> = {
+    'invisible-focus': '[data-testid="defect-invisible-focus"]',
+    'mouse-only-activation': '[data-testid="defect-mouse-only"]',
+    'missing-accessible-name': '[data-testid="defect-missing-name"]',
+    'insufficient-contrast': '[data-testid="defect-low-contrast"]',
+  };
+
+  for (const [defectType, selector] of Object.entries(defectSelectors)) {
+    const element = document.querySelector(selector) as HTMLElement | null;
+    if (element) {
+      resetRepair(defectType as DefectType, element);
+    }
   }
 }

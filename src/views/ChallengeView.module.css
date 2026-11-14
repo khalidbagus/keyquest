@@ -15,6 +15,7 @@
   padding: var(--space-3) var(--space-4);
   background-color: var(--color-surface);
   border-radius: var(--border-radius-sm);
+  flex-wrap: wrap;
 }
 
 .progressLabel {
@@ -29,6 +30,24 @@
 .progressHint {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
+}
+
+.resetButton {
+  margin-left: auto;
+  padding: var(--space-2) var(--space-4);
+  background-color: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-text-muted);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  min-height: var(--min-touch-target);
+}
+
+.resetButton:hover {
+  color: var(--color-text);
+  border-color: var(--color-text);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .intro {

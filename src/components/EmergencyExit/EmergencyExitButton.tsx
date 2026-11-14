@@ -21,6 +21,13 @@ export function EmergencyExitButton() {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
+        // Don't intercept Escape if a modal dialog is open
+        // Native dialogs handle Escape themselves
+        const openDialog = document.querySelector('dialog[open]');
+        if (openDialog) {
+          return;
+        }
+        
         event.preventDefault();
         handleExit();
       }
