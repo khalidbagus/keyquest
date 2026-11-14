@@ -38,7 +38,9 @@ function createInitialDefectState(type: DefectType): DefectState {
   };
 }
 
-function createInitialProgressState(): ProgressState {
+// Exported for unit tests of hint progression (Property 6)
+// eslint-disable-next-line react-refresh/only-export-components
+export function createInitialProgressState(): ProgressState {
   return {
     version: 1,
     sessionId: crypto.randomUUID(),
@@ -74,7 +76,12 @@ interface ReducerState {
 
 type ReducerAction = GameAction;
 
-function gameReducer(state: ReducerState, action: ReducerAction): ReducerState {
+// Exported for unit tests of hint progression (Property 6)
+// eslint-disable-next-line react-refresh/only-export-components
+export function gameReducer(
+  state: ReducerState,
+  action: ReducerAction
+): ReducerState {
   const now = Date.now();
 
   switch (action.type) {

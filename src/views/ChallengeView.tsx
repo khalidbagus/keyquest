@@ -7,6 +7,7 @@
 import { useEffect, useCallback, useState, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import { ChallengeSandbox } from '../components/ChallengeSandbox';
+import { HintPanel } from '../components/HintPanel';
 import { RepairStudio } from '../components/RepairStudio';
 import { ResetConfirmDialog } from '../components/ResetConfirmDialog';
 import { applyRepair, resetAllRepairs } from '../engines/RepairEngine';
@@ -161,6 +162,9 @@ export function ChallengeView() {
           </p>
         </div>
       )}
+
+      {/* Hint panel (app shell zone: Emergency Exit → Hint Button → Sandbox) */}
+      <HintPanel />
 
       {/* Main content: Sandbox + Repair Studio */}
       <div className={styles.content}>
