@@ -65,7 +65,7 @@ export const HINT_REGISTRY: readonly HintDefinition[] = [
   {
     defectType: 'invisible-focus',
     level: 3,
-    text: 'The "Buy Now" button has no visible focus indicator. The repair restores a :focus-visible outline (3px solid #005fcc) so sighted keyboard users can always see which control is active — WCAG 2.4.7 Focus Visible.',
+    text: 'The "Buy Now" button has no visible focus indicator. The repair restores a :focus-visible outline (3px solid #60a5fa) so sighted keyboard users can always see which control is active — WCAG 2.4.7 Focus Visible.',
   },
 
   // ============================================

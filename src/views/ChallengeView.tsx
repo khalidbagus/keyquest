@@ -58,7 +58,6 @@ export function ChallengeView() {
 
   const handleResetCancel = useCallback(() => {
     setShowResetDialog(false);
-    resetButtonRef.current?.focus();
   }, []);
 
   // Error boundary handlers
@@ -161,6 +160,7 @@ export function ChallengeView() {
         isOpen={showResetDialog}
         onConfirm={handleResetConfirm}
         onCancel={handleResetCancel}
+        returnFocusRef={resetButtonRef}
       />
     </div>
   );

@@ -3,8 +3,8 @@
  * Tests restore dialog, restore flow, and start fresh flow
  */
 
-import { test, expect, type Page } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
+import { test, expect, type Page } from './fixtures';
+import AxeBuilder from './helpers/axe';
 
 /**
  * Creates a valid saved progress state with specified repairs
@@ -66,7 +66,7 @@ test.describe('Progress Restoration Dialog', () => {
     await page.evaluate(() => localStorage.clear());
   });
 
-  test('restore dialog has a name and passes axe', async ({ page }) => {
+  test('restore dialog has a name and passes axe', { tag: '@axe' }, async ({ page }) => {
     await setSavedProgress(page, createSavedProgress({ discoveredDefects: ['invisible-focus'] }));
     await page.goto('/');
     await expect(page.getByRole('dialog')).toHaveAccessibleName(/\S/);

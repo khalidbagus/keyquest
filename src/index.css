@@ -28,8 +28,8 @@
   --color-error: #dc2626; /* 4.8:1 contrast with #ffffff */
   --color-accent-purple: #c4b5fd;
 
-  /* Focus indicator - > 3:1 contrast against dark & light surfaces */
-  --color-focus: #005fcc;
+  /* Focus indicators contrast against the app's dark surfaces */
+  --color-focus: #60a5fa;
   --color-focus-ring-outer: #60a5fa;
   --focus-outline-width: 3px;
   --focus-outline-offset: 2px;

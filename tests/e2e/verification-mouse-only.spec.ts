@@ -4,7 +4,7 @@
  * Requirements: 8.7, 18.4, 5.1, 5.2, 5.3
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Mouse-Only Activation Defect Verification', () => {
   test.beforeEach(async ({ page }) => {

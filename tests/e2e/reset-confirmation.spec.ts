@@ -3,8 +3,8 @@
  * Tests reset dialog, confirmation flow, cancellation, and state reset
  */
 
-import { test, expect, type Page } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
+import { test, expect, type Page } from './fixtures';
+import AxeBuilder from './helpers/axe';
 
 async function startChallenge(page: Page) {
   await page.goto('/');
@@ -225,7 +225,7 @@ test.describe('Reset Confirmation Dialog', () => {
 });
 
 test.describe('Reset Dialog Accessibility', () => {
-  test('dialog passes axe accessibility checks', async ({ page }) => {
+  test('dialog passes axe accessibility checks', { tag: '@axe' }, async ({ page }) => {
     await startChallenge(page);
     await page.getByTestId('reset-button').click();
 

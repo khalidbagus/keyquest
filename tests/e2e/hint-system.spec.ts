@@ -5,8 +5,8 @@
  * Requirements: 10.1 - 10.6
  */
 
-import { test, expect, type Page } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
+import { test, expect, type Page } from './fixtures';
+import AxeBuilder from './helpers/axe';
 
 async function startChallenge(page: Page) {
   await page.goto('/');
@@ -249,7 +249,7 @@ test.describe('Hint Reset Behavior', () => {
 });
 
 test.describe('Hint Accessibility', () => {
-  test('hint panel passes axe accessibility checks', async ({ page }) => {
+  test('hint panel passes axe accessibility checks', { tag: '@axe' }, async ({ page }) => {
     await startChallenge(page);
 
     await requestHint(page);
@@ -261,7 +261,7 @@ test.describe('Hint Accessibility', () => {
     expect(results.violations).toEqual([]);
   });
 
-  test('app shell still passes axe with hint panel visible', async ({
+  test('app shell still passes axe with hint panel visible', { tag: '@axe' }, async ({
     page,
   }) => {
     await startChallenge(page);

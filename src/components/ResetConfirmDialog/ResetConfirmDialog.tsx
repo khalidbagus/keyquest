@@ -4,23 +4,24 @@
  * Requirements: 11.1, 11.2, 11.6
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, type RefObject } from 'react';
 import styles from './ResetConfirmDialog.module.css';
 
 interface ResetConfirmDialogProps {
   isOpen: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  returnFocusRef: RefObject<HTMLButtonElement | null>;
 }
 
 export function ResetConfirmDialog({
   isOpen,
   onConfirm,
   onCancel,
+  returnFocusRef,
 }: ResetConfirmDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
-  const previousActiveElement = useRef<Element | null>(null);
 
   // Show/hide dialog based on isOpen prop
   useEffect(() => {
@@ -28,31 +29,16 @@ export function ResetConfirmDialog({
     if (!dialog) return;
 
     if (isOpen && !dialog.open) {
-      // Store the previously focused element
-      previousActiveElement.current = document.activeElement;
       dialog.showModal();
       // Focus cancel button (safe default)
-      setTimeout(() => {
-        cancelButtonRef.current?.focus();
-      }, 0);
+      cancelButtonRef.current?.focus();
     } else if (!isOpen && dialog.open) {
       dialog.close();
+      // Safari/WebKit clicks do not necessarily focus the trigger. Restore
+      // explicitly after the modal closes and the background stops being inert.
+      returnFocusRef.current?.focus();
     }
-  }, [isOpen]);
-
-  // Return focus after dialog closes
-  useEffect(() => {
-    if (!isOpen && previousActiveElement.current instanceof HTMLElement) {
-      // Small delay to ensure dialog is fully closed
-      const timeoutId = setTimeout(() => {
-        if (previousActiveElement.current instanceof HTMLElement) {
-          previousActiveElement.current.focus();
-        }
-      }, 0);
-      return () => clearTimeout(timeoutId);
-    }
-    return undefined;
-  }, [isOpen]);
+  }, [isOpen, returnFocusRef]);
 
   const handleConfirm = useCallback(() => {
     onConfirm();

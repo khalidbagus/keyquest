@@ -10,8 +10,8 @@
  * 4. Progress preservation works as expected
  */
 
-import { test, expect, type Page } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
+import { test, expect, type Page } from './fixtures';
+import AxeBuilder from './helpers/axe';
 
 /**
  * Helper to navigate to challenge view
@@ -136,7 +136,7 @@ test.describe('Error Boundary', () => {
   });
 
   test.describe('Accessibility', () => {
-    test('error boundary does not add axe violations to challenge view', async ({ page }) => {
+    test('error boundary does not add axe violations to challenge view', { tag: '@axe' }, async ({ page }) => {
       await startChallenge(page);
 
       // Run axe on the shell (excluding sandbox which has intentional defects)
@@ -272,7 +272,7 @@ async function setRenderFailure(page: Page, broken: boolean) {
   }, broken);
 }
 
-test('actual fallback passes axe and retry restores repairs and keyboard focus', async ({ page }) => {
+test('actual fallback passes axe and retry restores repairs and keyboard focus', { tag: '@axe' }, async ({ page }) => {
   await installRenderFailure(page);
   await startChallenge(page);
   await repair(page, 'Missing Accessible Name', 'repair-missing-name');
@@ -344,7 +344,7 @@ test('persistent initial render failure caps retries and returns safely to menu'
   await expect(page.getByTestId('start-challenge')).toBeVisible();
 });
 
-test('Repair Studio render failures are contained by the recovery boundary', async ({ page }) => {
+test('Repair Studio render failures are contained by the recovery boundary', { tag: '@axe' }, async ({ page }) => {
   await installRenderFailure(page, 'RepairStudio');
   await page.goto('/');
   await setRenderFailure(page, true);

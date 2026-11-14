@@ -56,9 +56,9 @@ const DEFECTS: DefectInfo[] = [
       'The "Buy Now" button has outline: none with no replacement focus indicator. Sighted keyboard users cannot see when focus lands on it.',
     brokenCode: '.buyButton { outline: none; }',
     repairedCode:
-      '.keyquest-focus-repaired:focus-visible { outline: 3px solid #005fcc; outline-offset: 2px; }',
+      '.keyquest-focus-repaired:focus-visible { outline: 3px solid #60a5fa; outline-offset: 2px; }',
     defaultEducationalFeedback:
-      'Repair applied: Added a visible focus indicator using the :focus-visible pseudo-class. The 3px solid #005fcc outline provides at least 3:1 contrast against adjacent colors, meeting WCAG 2.4.7 (Focus Visible).',
+      'Repair applied: Added a visible focus indicator using the :focus-visible pseudo-class. The 3px solid #60a5fa outline provides at least 3:1 contrast against adjacent colors, meeting WCAG 2.4.7 (Focus Visible).',
     defaultVerificationEvidence:
       'Computed Style Check: outlineStyle is "solid", outlineWidth is "3px" (> 0px) when focused.',
     testId: 'defect-invisible-focus',

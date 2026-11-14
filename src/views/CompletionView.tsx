@@ -23,7 +23,7 @@ const WCAG_INFO: Record<string, WcagSummaryDetail> = {
     level: 'AA',
     name: 'Focus Visible',
     remedy:
-      'Restored :focus-visible outline (3px solid #005fcc) with ≥ 3:1 contrast.',
+      'Restored :focus-visible outline (3px solid #60a5fa) with ≥ 3:1 contrast.',
     impact:
       'Sighted keyboard users can always track which interactive control is active.',
   },

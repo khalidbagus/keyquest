@@ -1,5 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
+import { test, expect, type Page } from './fixtures';
+import AxeBuilder from './helpers/axe';
 
 async function start(page: Page) {
   await page.goto('/');
@@ -13,13 +13,13 @@ async function repair(page: Page, name: string, testId: string) {
   await page.getByTestId(testId).click();
 }
 
-test('menu passes axe', async ({ page }) => {
+test('menu passes axe', { tag: '@axe' }, async ({ page }) => {
   await page.goto('/');
   await expect(page.getByTestId('start-challenge')).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
-test('challenge shell passes axe excluding only the intentional sandbox', async ({ page }) => {
+test('challenge shell passes axe excluding only the intentional sandbox', { tag: '@axe' }, async ({ page }) => {
   await start(page);
   expect((await new AxeBuilder({ page }).exclude('[data-testid="challenge-sandbox"]').analyze()).violations).toEqual([]);
 });
@@ -50,7 +50,7 @@ test('focus repair changes computed outline after keyboard focus', async ({ page
   expect(await target.evaluate(el => parseFloat(getComputedStyle(el).outlineWidth))).toBeGreaterThan(0);
 });
 
-test('axe detects the unnamed cart before repair and its accessible name after repair', async ({ page }) => {
+test('axe detects the unnamed cart before repair and its accessible name after repair', { tag: '@axe' }, async ({ page }) => {
   await start(page);
   const target = page.getByTestId('defect-missing-name');
   const before = await new AxeBuilder({ page }).include('[data-testid="defect-missing-name"]').withRules('button-name').analyze();
@@ -61,7 +61,7 @@ test('axe detects the unnamed cart before repair and its accessible name after r
   expect(after.violations).toEqual([]);
 });
 
-test('price fails contrast before repair and passes after repair', async ({ page }) => {
+test('price fails contrast before repair and passes after repair', { tag: '@axe' }, async ({ page }) => {
   await start(page);
   const scan = () => new AxeBuilder({ page }).include('[data-testid="defect-low-contrast"]').withRules('color-contrast').analyze();
   expect((await scan()).violations.map(v => v.id)).toContain('color-contrast');
@@ -69,7 +69,7 @@ test('price fails contrast before repair and passes after repair', async ({ page
   expect((await scan()).violations).toEqual([]);
 });
 
-test('repairs can be done out of order; completion requires all four and replay resets', async ({ page }) => {
+test('repairs can be done out of order; completion requires all four and replay resets', { tag: '@axe' }, async ({ page }) => {
   await start(page);
   await repair(page, 'Missing Accessible Name', 'repair-missing-name');
   await expect(page.getByText('1 / 4 defects repaired')).toBeVisible();
