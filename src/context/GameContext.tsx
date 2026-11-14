@@ -63,7 +63,7 @@ export function createInitialProgressState(): ProgressState {
   };
 }
 
-const initialGameState: GameState = { phase: 'menu' };
+const initialGameState: GameState = { phase: 'loading' };
 
 // ============================================
 // Reducer
@@ -297,12 +297,15 @@ export function GameProvider({ children }: GameProviderProps) {
 
   // Auto-save on progress changes (debounced via effect cleanup)
   useEffect(() => {
+    // Do not overwrite an existing session during loading or while the player
+    // is deciding whether to restore it. Menu exits save explicitly.
+    if (state.game.phase !== 'challenge' && state.game.phase !== 'completion') return;
     const timeoutId = setTimeout(() => {
       saveProgress();
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [state.progress, saveProgress]);
+  }, [state.progress, state.game.phase, saveProgress]);
 
   const value: GameContextValue = {
     state: state.game,

@@ -40,6 +40,7 @@ interface ErrorBoundaryState {
 const MAX_RETRIES = 3;
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  private recoveredContentRef = createRef<HTMLDivElement>();
   private recoveryHeadingRef = createRef<HTMLHeadingElement>();
 
   constructor(props: ErrorBoundaryProps) {
@@ -86,6 +87,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   componentDidUpdate(_prevProps: ErrorBoundaryProps, prevState: ErrorBoundaryState): void {
     // Focus the recovery heading when error UI is first shown after mount
     if (this.state.hasError && !prevState.hasError) {
+      this.recoveryHeadingRef.current?.focus();
+    } else if (!this.state.hasError && prevState.hasError) {
+      this.recoveredContentRef.current?.focus();
+    } else if (this.state.hasError && this.state.retryKey !== prevState.retryKey) {
+      // A failed retry can be batched straight back into the fallback.
       this.recoveryHeadingRef.current?.focus();
     }
   }
@@ -148,7 +154,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <div
           className={styles.errorContainer}
           role="alert"
-          aria-live="assertive"
           data-testid="error-boundary-ui"
         >
           <div className={styles.errorCard}>
@@ -163,7 +168,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
             <p className={styles.errorMessage}>
               The challenge sandbox encountered an unexpected error. Your progress
-              has been saved automatically.
+              is kept in this session. Saving to this browser was attempted.
             </p>
 
             {error && (
@@ -226,7 +231,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
             <p className={styles.progressNote}>
               <span aria-hidden="true">💾</span>
-              Your discovered and verified defects have been preserved.
+              Your discoveries, repairs, and hints are kept during recovery.
             </p>
           </div>
         </div>
@@ -234,7 +239,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     }
 
     // Use key to force remount on retry
-    return <div key={retryKey}>{children}</div>;
+    return <div key={retryKey} ref={this.recoveredContentRef} tabIndex={-1}>{children}</div>;
   }
 }
 

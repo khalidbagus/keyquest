@@ -94,7 +94,7 @@ export function MainMenuView() {
             CASE FILE #A11Y-01 · LEVEL 1: THE MIDNIGHT CHECKOUT
           </span>
 
-          <h2 id="menu-hero-heading" className={styles.heading}>
+          <h2 id="menu-hero-heading" tabIndex={-1} className={styles.heading}>
             Welcome to KeyQuest
           </h2>
 

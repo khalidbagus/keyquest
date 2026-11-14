@@ -2,10 +2,8 @@
  * Error Boundary E2E Tests
  * Requirements: 17.1, 17.2, 17.3, 17.4, 17.5
  *
- * These tests verify error boundary behavior using integration tests that
- * confirm the error boundary is properly integrated and doesn't interfere
- * with normal operation. Since triggering actual React render errors in E2E
- * tests is complex and brittle, we focus on verifying:
+ * Covers normal integration and actual initial/subsequent render failures
+ * injected into module responses, including axe and keyboard recovery:
  * 1. Error boundary doesn't break normal functionality
  * 2. Recovery patterns (reset, menu navigation) work correctly
  * 3. Focus management and accessibility are maintained
@@ -254,4 +252,106 @@ test.describe('Error Boundary Component Integration', () => {
     await page.keyboard.press('Space');
     await expect(dialog).not.toBeVisible();
   });
+});
+
+// Fault injection stays in the test's intercepted module response; production
+// code has no error switch, global error handler, or special testing path.
+async function installRenderFailure(page: Page, moduleName = 'MidnightCheckout') {
+  await page.route(`**/src/components/${moduleName}/${moduleName}.tsx*`, async route => {
+    const response = await route.fetch();
+    const source = await response.text();
+    const pattern = new RegExp(`function ${moduleName}\\([\\s\\S]*?\\)\\s*\\{`);
+    expect(source).toMatch(pattern);
+    await route.fulfill({ response, body: source.replace(pattern, '$& if (window.__keyquestRenderFailure) { throw new Error("Injected render failure"); }') });
+  });
+}
+
+async function setRenderFailure(page: Page, broken: boolean) {
+  await page.evaluate(value => {
+    (window as unknown as { __keyquestRenderFailure: boolean }).__keyquestRenderFailure = value;
+  }, broken);
+}
+
+test('actual fallback passes axe and retry restores repairs and keyboard focus', async ({ page }) => {
+  await installRenderFailure(page);
+  await startChallenge(page);
+  await repair(page, 'Missing Accessible Name', 'repair-missing-name');
+  await page.getByTestId('hint-button').click();
+  await setRenderFailure(page, true);
+  // A Context update triggers a subsequent render error in the checkout.
+  await page.getByTestId('hint-button').click();
+  await expect(page.getByTestId('error-boundary-ui')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Something Went Wrong' })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'Repair Studio' })).toHaveCount(0);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('keyquest-progress-v1')!));
+  expect(saved.defects['missing-accessible-name'].verified).toBe(true);
+  expect(Object.values(saved.hintsUsed).some(count => Number(count) > 0)).toBe(true);
+  await setRenderFailure(page, false);
+  await page.getByTestId('error-retry-button').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('error-boundary-ui')).toHaveCount(0);
+  await expect(page.getByTestId('defect-missing-name')).toHaveAccessibleName('View shopping cart');
+  await expect(page.getByText('1 / 4 defects repaired')).toBeVisible();
+  await expect(page.locator(':focus')).toContainText('Repair Studio');
+  await setRenderFailure(page, true);
+  await page.getByTestId('hint-button').click();
+  await expect(page.getByTestId('error-boundary-ui')).toBeVisible();
+  await page.getByTestId('error-menu-button').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: 'Welcome to KeyQuest' })).toBeFocused();
+  await page.reload();
+  await page.getByTestId('restore-progress').click();
+  await expect(page.getByTestId('defect-missing-name')).toHaveAccessibleName('View shopping cart');
+  await expect(page.getByText('1 / 4 defects repaired')).toBeVisible();
+});
+
+test('actual reset remounts sandbox while preserving discoveries repairs and hints', async ({ page }) => {
+  await installRenderFailure(page);
+  await startChallenge(page);
+  await repair(page, 'Mouse-Only Activation', 'repair-mouse-only');
+  await page.getByTestId('hint-button').click();
+  await setRenderFailure(page, true);
+  await page.getByTestId('hint-button').click();
+  await expect(page.getByTestId('error-boundary-ui')).toBeVisible();
+  await setRenderFailure(page, false);
+  await page.getByTestId('error-reset-button').focus();
+  await page.keyboard.press('Space');
+  await expect(page.getByTestId('error-boundary-ui')).toHaveCount(0);
+  await expect(page.getByTestId('defect-mouse-only')).toHaveAttribute('role', 'button');
+  await expect(page.getByText('1 / 4 defects repaired')).toBeVisible();
+  await expect(page.locator(':focus')).toContainText('Repair Studio');
+  await page.getByTestId('defect-mouse-only').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('✓ Added!')).toBeVisible();
+});
+
+test('persistent initial render failure caps retries and returns safely to menu', async ({ page }) => {
+  await installRenderFailure(page);
+  await page.goto('/');
+  await setRenderFailure(page, true);
+  await page.getByTestId('start-challenge').click();
+  await expect(page.getByRole('heading', { name: 'Something Went Wrong' })).toBeFocused();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.getByTestId('error-retry-button').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('heading', { name: 'Something Went Wrong' })).toBeFocused();
+  }
+  await expect(page.getByTestId('error-retry-button')).toBeDisabled();
+  await page.getByTestId('error-menu-button').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: 'Welcome to KeyQuest' })).toBeFocused();
+  await expect(page.getByTestId('start-challenge')).toBeVisible();
+});
+
+test('Repair Studio render failures are contained by the recovery boundary', async ({ page }) => {
+  await installRenderFailure(page, 'RepairStudio');
+  await page.goto('/');
+  await setRenderFailure(page, true);
+  await page.getByTestId('start-challenge').click();
+  await expect(page.getByTestId('error-boundary-ui')).toBeVisible();
+  await expect(page.getByTestId('emergency-exit')).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('start-challenge')).toBeVisible();
 });

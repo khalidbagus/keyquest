@@ -1,22 +1,52 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-// Requirement 1 (Application Loading): loading indicator and announcement not yet implemented.
-// The app currently initializes directly to the menu. This test documents the expected
-// behavior per Requirement 1.1-1.5 and will pass once the loading feature is added.
-test.skip('startup announces loading before entering the menu', async ({ page }) => {
-  await page.addInitScript(() => {
-    const records: string[] = [];
-    (window as unknown as { loadingRecords: string[] }).loadingRecords = records;
-    new MutationObserver(() => {
-      document.querySelectorAll('[role="status"][aria-live]').forEach(el => {
-        if (/loading/i.test(el.textContent || '')) records.push(el.textContent || '');
-      });
-    }).observe(document, { childList: true, subtree: true });
+// Hold the real module response so the loading state is deterministic.
+test('startup announces loading before entering the menu', async ({ page }) => {
+  let release!: () => void;
+  const held = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/src/GameRouter.tsx*', async route => {
+    await held;
+    await route.continue();
   });
-  await page.goto('/');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  const loading = page.getByTestId('application-loading');
+  try {
+    await expect(loading).toBeVisible();
+    await expect(loading.getByRole('status')).toHaveAttribute('aria-live', 'polite');
+    await expect(loading.getByRole('status')).toHaveText('Loading KeyQuest application files.');
+    await expect(page.getByRole('progressbar', { name: 'Application files loading' })).not.toHaveAttribute('value');
+    await expect(page.getByTestId('start-challenge')).toHaveCount(0);
+    await expect(page.getByRole('status')).toHaveCount(1);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page.getByTestId('reduced-motion-toggle').focus();
+  } finally { release(); }
   await expect(page.getByTestId('start-challenge')).toBeVisible();
-  expect(await page.evaluate(() => (window as unknown as { loadingRecords: string[] }).loadingRecords)).not.toEqual([]);
+  await expect(loading).toHaveCount(0);
+  await expect(page.getByTestId('reduced-motion-toggle')).toBeFocused();
+});
+
+test('module load failure offers keyboard retry without losing saved progress', async ({ page }) => {
+  // Save real progress, then fail the next application-module request.
+  await page.goto('/');
+  await page.getByTestId('start-challenge').click();
+  const card = page.locator('div').filter({ has: page.getByRole('heading', { name: 'Invisible Focus', exact: true }) }).filter({ has: page.getByRole('button', { name: 'Discover Defect' }) }).last();
+  await card.getByRole('button', { name: 'Discover Defect' }).click();
+  await page.keyboard.press('Escape');
+  const saved = await page.evaluate(() => localStorage.getItem('keyquest-progress-v1'));
+  await page.route('**/src/GameRouter.tsx*', route => route.abort('failed'), { times: 1 });
+  await page.reload();
+  await expect(page.getByTestId('loading-error')).toContainText('application files could not be loaded');
+  await expect(page.getByRole('heading', { name: 'Unable to load KeyQuest' })).toBeFocused();
+  await expect(page.getByTestId('application-loading')).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('keyquest-progress-v1'))).toBe(saved);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByRole('button', { name: 'Retry loading' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('progress-restore-dialog')).toBeVisible();
+  await page.getByTestId('restore-progress').click();
+  await expect(page.getByText('1 / 4 discovered')).toBeVisible();
 });
 
 test('reset dialog and hint panel have accessible names and pass axe', async ({ page }) => {

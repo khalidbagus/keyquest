@@ -15,6 +15,7 @@ async function repair(page: Page, name: string, testId: string) {
 
 test('menu passes axe', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByTestId('start-challenge')).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
@@ -25,6 +26,7 @@ test('challenge shell passes axe excluding only the intentional sandbox', async 
 
 test('keyboard navigation exposes a visible skip link and can start and exit', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByTestId('start-challenge')).toBeVisible();
   await page.keyboard.press('Tab');
   const skip = page.getByRole('link', { name: 'Skip to main content' });
   await expect(skip).toBeFocused();

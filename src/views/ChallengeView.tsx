@@ -4,7 +4,7 @@
  * Requirements: 2.1, 2.2, 2.4, 17.1-17.5
  */
 
-import { useEffect, useCallback, useState, useRef } from 'react';
+import { useEffect, useLayoutEffect, useCallback, useState, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import { ChallengeSandbox } from '../components/ChallengeSandbox';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -27,54 +27,6 @@ export function ChallengeView() {
   const { progress, dispatch, resetProgress, saveProgress } = useGame();
   const [showResetDialog, setShowResetDialog] = useState(false);
   const resetButtonRef = useRef<HTMLButtonElement>(null);
-  const hasAppliedRestoredRepairs = useRef(false);
-
-  // Apply restored repairs to the DOM when restoring progress
-  useEffect(() => {
-    if (hasAppliedRestoredRepairs.current) return;
-
-    const repairedDefects = Object.entries(progress.defects)
-      .filter(([, state]) => state.repaired)
-      .map(([type]) => type as DefectType);
-
-    if (repairedDefects.length === 0) return;
-
-    const applyRestoredRepairs = () => {
-      let allApplied = true;
-      repairedDefects.forEach((defectType) => {
-        const selector = DEFECT_SELECTORS[defectType];
-        const element = document.querySelector(selector) as HTMLElement | null;
-        if (element) {
-          applyRepair(defectType, element);
-        } else {
-          allApplied = false;
-        }
-      });
-      return allApplied;
-    };
-
-    if (applyRestoredRepairs()) {
-      hasAppliedRestoredRepairs.current = true;
-      return;
-    }
-
-    const observer = new MutationObserver(() => {
-      if (applyRestoredRepairs()) {
-        hasAppliedRestoredRepairs.current = true;
-        observer.disconnect();
-      }
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [progress.defects]);
-
   // Check if all defects are verified for level completion
   useEffect(() => {
     const allVerified = Object.values(progress.defects).every(
@@ -102,7 +54,6 @@ export function ChallengeView() {
     resetAllRepairs();
     resetProgress();
     dispatch({ type: 'START_CHALLENGE' });
-    hasAppliedRestoredRepairs.current = false;
   }, [resetProgress, dispatch]);
 
   const handleResetCancel = useCallback(() => {
@@ -114,7 +65,6 @@ export function ChallengeView() {
   const handleErrorResetSandbox = useCallback(() => {
     // Reset repairs but preserve progress structure (discoveries, hints, etc.)
     resetAllRepairs();
-    hasAppliedRestoredRepairs.current = false;
     // Re-dispatch START_CHALLENGE to refresh sandbox state
     dispatch({ type: 'START_CHALLENGE' });
   }, [dispatch]);
@@ -197,22 +147,14 @@ export function ChallengeView() {
       <HintPanel />
 
       {/* Main content: Sandbox + Repair Studio */}
-      <div className={styles.content}>
-        <div className={styles.sandboxColumn}>
-          <ErrorBoundary
-            progress={progress}
-            saveProgress={saveProgress}
-            onResetSandbox={handleErrorResetSandbox}
-            onReturnToMenu={handleErrorReturnToMenu}
-          >
-            <ChallengeSandbox onDefectInteraction={handleDefectInteraction} />
-          </ErrorBoundary>
-        </div>
-
-        <div className={styles.studioColumn}>
-          <RepairStudio />
-        </div>
-      </div>
+      <ErrorBoundary
+        progress={progress}
+        saveProgress={saveProgress}
+        onResetSandbox={handleErrorResetSandbox}
+        onReturnToMenu={handleErrorReturnToMenu}
+      >
+        <SandboxSession onDefectInteraction={handleDefectInteraction} />
+      </ErrorBoundary>
 
       {/* Reset confirmation dialog */}
       <ResetConfirmDialog
@@ -220,6 +162,28 @@ export function ChallengeView() {
         onConfirm={handleResetConfirm}
         onCancel={handleResetCancel}
       />
+    </div>
+  );
+}
+
+/** Remount repairs and the studio together after retry or sandbox reset. */
+function SandboxSession({ onDefectInteraction }: { onDefectInteraction: (type: string) => void }) {
+  const { progress } = useGame();
+
+  useLayoutEffect(() => {
+    for (const defect of Object.values(progress.defects)) {
+      if (!defect.repaired) continue;
+      const element = document.querySelector<HTMLElement>(DEFECT_SELECTORS[defect.type]);
+      if (element) applyRepair(defect.type, element);
+    }
+  }, [progress.defects]);
+
+  return (
+    <div className={styles.content}>
+      <div className={styles.sandboxColumn}>
+        <ChallengeSandbox onDefectInteraction={onDefectInteraction} />
+      </div>
+      <div className={styles.studioColumn}><RepairStudio /></div>
     </div>
   );
 }

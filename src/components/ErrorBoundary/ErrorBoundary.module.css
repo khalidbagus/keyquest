@@ -138,7 +138,6 @@
 .retryCount {
   font-weight: 400;
   font-size: var(--font-size-sm);
-  opacity: 0.85;
 }
 
 .retryLimitMessage {
