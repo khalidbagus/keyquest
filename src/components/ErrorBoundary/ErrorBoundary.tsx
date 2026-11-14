@@ -76,8 +76,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
+  componentDidMount(): void {
+    // Focus the recovery heading if error occurred during initial mount
+    if (this.state.hasError) {
+      this.recoveryHeadingRef.current?.focus();
+    }
+  }
+
   componentDidUpdate(_prevProps: ErrorBoundaryProps, prevState: ErrorBoundaryState): void {
-    // Focus the recovery heading when error UI is first shown
+    // Focus the recovery heading when error UI is first shown after mount
     if (this.state.hasError && !prevState.hasError) {
       this.recoveryHeadingRef.current?.focus();
     }
