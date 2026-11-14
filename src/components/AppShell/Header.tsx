@@ -80,9 +80,11 @@ export function Header() {
             </span>
           </div>
 
-          <nav aria-label="Primary" className={styles.nav}>
-            {showEmergencyExit && <EmergencyExitButton />}
-          </nav>
+          {showEmergencyExit && (
+            <nav aria-label="Primary" className={styles.nav}>
+              <EmergencyExitButton />
+            </nav>
+          )}
         </div>
       </div>
     </header>

@@ -5,7 +5,7 @@
  * Requirements: 4.4, 5.4, 6.4, 7.4, 8.1-8.6
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useGame } from '../../context/GameContext';
 import { applyRepair, type RepairResult } from '../../engines/RepairEngine';
 import { verify } from '../../engines/VerificationEngine';
@@ -110,16 +110,24 @@ function formatVerificationDetails(
     return defect.defaultVerificationEvidence;
   }
 
-  const { details } = verification;
+  const { details, passed } = verification;
   switch (details.type) {
     case 'focus':
-      return `Computed Style Check: outline "${details.outlineWidth} ${details.outlineStyle} ${details.outlineColor}" — visible focus indicator confirmed.`;
+      return passed
+        ? `Computed Style Check: outline "${details.outlineWidth} ${details.outlineStyle} ${details.outlineColor}" — visible focus indicator confirmed.`
+        : `Computed Style Check: outline "${details.outlineWidth} ${details.outlineStyle}" — visible focus indicator not detected.`;
     case 'keyboard':
-      return `DOM Event Check: Enter key (${details.enterKeyWorks ? 'Pass' : 'Fail'}), Space key (${details.spaceKeyWorks ? 'Pass' : 'Fail'}) — keyboard activation confirmed.`;
+      return `DOM Event Check: Enter key (${details.enterKeyWorks ? 'Pass' : 'Fail'}), Space key (${details.spaceKeyWorks ? 'Pass' : 'Fail'}) — ${
+        passed ? 'keyboard activation confirmed.' : 'keyboard activation incomplete.'
+      }`;
     case 'accessible-name':
-      return `Accessibility Tree Check: computedName="${details.computedName}" (source: ${details.nameSource}).`;
+      return passed
+        ? `Accessibility Tree Check: computedName="${details.computedName}" (source: ${details.nameSource}).`
+        : 'Accessibility Tree Check: computedName is empty — accessible name not detected.';
     case 'contrast':
-      return `Luminance Contrast Check: ${details.contrastRatio}:1 measured (required ≥ ${details.requiredRatio}:1).`;
+      return `Luminance Contrast Check: ${details.contrastRatio}:1 measured (required ≥ ${details.requiredRatio}:1) — ${
+        passed ? 'meets WCAG AA.' : 'below WCAG AA threshold.'
+      }`;
     default:
       return defect.defaultVerificationEvidence;
   }
@@ -127,6 +135,10 @@ function formatVerificationDetails(
 
 export function RepairStudio() {
   const { progress, dispatch } = useGame();
+  const [announcement, setAnnouncement] = useState('');
+  const feedbackRefs = useRef<Partial<Record<DefectType, HTMLDivElement | null>>>(
+    {}
+  );
   const [repairResults, setRepairResults] = useState<
     Record<DefectType, RepairResult | null>
   >({
@@ -172,14 +184,30 @@ export function RepairStudio() {
           [defect.type]: verificationResult,
         }));
         dispatch({ type: 'VERIFICATION_RESULT', result: verificationResult });
+
+        setAnnouncement(
+          verificationResult.passed
+            ? `${defect.name} repaired and verified. ${result.message}`
+            : `${defect.name} repair applied, but verification is incomplete.`
+        );
+
+        requestAnimationFrame(() => {
+          const feedbackEl = feedbackRefs.current[defect.type];
+          if (feedbackEl?.isConnected) {
+            feedbackEl.focus({ preventScroll: true });
+          }
+        });
       }
     },
     [dispatch]
   );
 
   const handleDiscover = useCallback(
-    (defectType: DefectType) => {
-      dispatch({ type: 'DISCOVER_DEFECT', defectType });
+    (defect: DefectInfo) => {
+      dispatch({ type: 'DISCOVER_DEFECT', defectType: defect.type });
+      setAnnouncement(
+        `Discovered defect: ${defect.name} (${defect.wcagCriterion}). ${defect.description}`
+      );
     },
     [dispatch]
   );
@@ -213,6 +241,14 @@ export function RepairStudio() {
 
   return (
     <div className={styles.studio}>
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="visually-hidden"
+      >
+        {announcement}
+      </div>
+
       <div className={styles.studioHeader}>
         <h3 className={styles.title}>
           <span aria-hidden="true">🔧</span>
@@ -288,7 +324,7 @@ export function RepairStudio() {
                 <button
                   type="button"
                   className={styles.discoverButton}
-                  onClick={() => handleDiscover(defect.type)}
+                  onClick={() => handleDiscover(defect)}
                 >
                   Discover Defect
                 </button>
@@ -307,6 +343,10 @@ export function RepairStudio() {
 
               {state.repaired && (
                 <div
+                  ref={(el) => {
+                    feedbackRefs.current[defect.type] = el;
+                  }}
+                  tabIndex={-1}
                   className={
                     state.verified ? styles.feedback : styles.feedbackUnverified
                   }

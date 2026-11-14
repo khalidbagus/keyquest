@@ -88,6 +88,11 @@
   background-color: rgba(251, 191, 36, 0.14);
 }
 
+.motionToggle[aria-pressed='true']:hover {
+  background-color: rgba(251, 191, 36, 0.22);
+  border-color: var(--color-warning);
+}
+
 .motionIndicator {
   font-size: 1rem;
   line-height: 1;

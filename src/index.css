@@ -162,9 +162,9 @@ kbd {
    Focus Styles (Accessible)
    ============================================ */
 
-/* Default focus - visible for all focusable elements */
+/* Default focus - visible for all focusable elements (>= 3:1 contrast on dark surfaces) */
 :focus-visible {
-  outline: var(--focus-outline-width) solid var(--color-focus);
+  outline: var(--focus-outline-width) solid var(--color-focus-ring-outer);
   outline-offset: var(--focus-outline-offset);
 }
 

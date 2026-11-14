@@ -119,6 +119,8 @@ export function ChallengeView() {
 
   return (
     <div className={styles.container}>
+      <h2 className="visually-hidden">Midnight Checkout Challenge</h2>
+
       {/* Progress indicator with segmented meter and reset button */}
       <div className={styles.progress}>
         <div className={styles.progressInfo}>
@@ -166,7 +168,7 @@ export function ChallengeView() {
       {/* Introduction message on first visit */}
       {discoveredCount === 0 && (
         <div className={styles.intro} role="status" aria-live="polite">
-          <h2>🔍 Welcome to the Midnight Checkout</h2>
+          <h3>🔍 Welcome to the Midnight Checkout</h3>
           <p>
             Explore the haunted checkout below using <kbd>Tab</kbd> and your
             mouse, or reveal defects directly in the{' '}

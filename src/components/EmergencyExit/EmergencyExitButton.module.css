@@ -27,7 +27,7 @@
 }
 
 .button:focus-visible {
-  outline: var(--focus-outline-width) solid var(--color-focus);
+  outline: var(--focus-outline-width) solid var(--color-focus-ring-outer);
   outline-offset: var(--focus-outline-offset);
 }
 
