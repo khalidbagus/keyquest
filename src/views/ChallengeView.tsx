@@ -1,12 +1,13 @@
 /**
  * Challenge View
  * Contains the progress bar, hint panel, sandbox, and repair studio
- * Requirements: 2.1, 2.2, 2.4
+ * Requirements: 2.1, 2.2, 2.4, 17.1-17.5
  */
 
 import { useEffect, useCallback, useState, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import { ChallengeSandbox } from '../components/ChallengeSandbox';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { HintPanel } from '../components/HintPanel';
 import { RepairStudio } from '../components/RepairStudio';
 import { ResetConfirmDialog } from '../components/ResetConfirmDialog';
@@ -23,7 +24,7 @@ const DEFECT_SELECTORS: Record<DefectType, string> = {
 };
 
 export function ChallengeView() {
-  const { progress, dispatch, resetProgress } = useGame();
+  const { progress, dispatch, resetProgress, saveProgress } = useGame();
   const [showResetDialog, setShowResetDialog] = useState(false);
   const resetButtonRef = useRef<HTMLButtonElement>(null);
   const hasAppliedRestoredRepairs = useRef(false);
@@ -109,6 +110,20 @@ export function ChallengeView() {
     resetButtonRef.current?.focus();
   }, []);
 
+  // Error boundary handlers
+  const handleErrorResetSandbox = useCallback(() => {
+    // Reset repairs but preserve progress structure (discoveries, hints, etc.)
+    resetAllRepairs();
+    hasAppliedRestoredRepairs.current = false;
+    // Re-dispatch START_CHALLENGE to refresh sandbox state
+    dispatch({ type: 'START_CHALLENGE' });
+  }, [dispatch]);
+
+  const handleErrorReturnToMenu = useCallback(() => {
+    // Progress is auto-saved; simply navigate to menu
+    dispatch({ type: 'EMERGENCY_EXIT' });
+  }, [dispatch]);
+
   // Count progress
   const discoveredCount = Object.values(progress.defects).filter(
     (d) => d.discovered
@@ -184,7 +199,14 @@ export function ChallengeView() {
       {/* Main content: Sandbox + Repair Studio */}
       <div className={styles.content}>
         <div className={styles.sandboxColumn}>
-          <ChallengeSandbox onDefectInteraction={handleDefectInteraction} />
+          <ErrorBoundary
+            progress={progress}
+            saveProgress={saveProgress}
+            onResetSandbox={handleErrorResetSandbox}
+            onReturnToMenu={handleErrorReturnToMenu}
+          >
+            <ChallengeSandbox onDefectInteraction={handleDefectInteraction} />
+          </ErrorBoundary>
         </div>
 
         <div className={styles.studioColumn}>
