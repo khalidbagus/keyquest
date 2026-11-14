@@ -18,7 +18,7 @@ Prepared November 15, 2026 (WIB). This document records preparation, not a compl
 | README | Replaced the template with inspected product/architecture/setup/verification documentation |
 | License | MIT prepared for publication approval; dependency and template notices retained |
 | Kiro evidence | 15 tracked files under root `.kiro/`; preserved unchanged |
-| Devpost | Existing draft `1303156`, project `1548031`; overview/story/category/Kiro explanation/disclosures saved, cover uploaded; still Draft, 2/5 steps complete |
+| Devpost | Existing draft `1303156`, project `1548031`; overview/story/category/Kiro explanation/disclosures/entrant answers saved, cover and four workflow screenshots uploaded; still Draft, 2/5 steps complete |
 | Application/video | Deliberately deferred; no placeholder URLs |
 
 ## Independently executed checks
@@ -89,6 +89,6 @@ Observed preview path: https://devpost.com/software/keyquest-the-haunted-accessi
 
 The UI allowed saving story and additional-info drafts with mandatory final-submission fields empty. Overview, pitch, story, React/TypeScript/Kiro/Vite tags, Costume Contest category, Kiro explanation, pre-existing-work disclosure, and judge testing notes were saved. The thumbnail upload returned a loaded 333×222 cloud-hosted preview of the cover. The form remained Draft with 2/5 steps complete. No final terms agreement or Submit project action was taken.
 
-The internal browser disconnected while attempting the optional screenshot gallery upload. After recovery, no internal browser provider was available; the attempted gallery upload is not claimed successful. Screenshots remain locally available. Enter the remaining country/entrant declarations and feedback from the user's supplied answers when access returns; do not put private entrant information in this public file. The legal-age declaration still requires the entrant's confirmation. Also add the verified GitHub URL after approved publication. Application and video links remain deferred.
+Browser access recovered on November 15, 2026. The entrant supplied the remaining declarations and feedback, which were saved privately in Devpost; their personal answers are not reproduced here. Four real production-workflow screenshots were uploaded, captioned, ordered, saved, and verified by reopening the draft. They show entry, discovery/code comparison, a verified keyboard repair, and completion after all four repairs. Local captures are `release/screenshots/workflow-01-menu.jpg` through `workflow-04-complete.jpg`. The draft remains 2/5 complete because mandatory publication links remain missing. Add the verified GitHub URL after approved publication; application and video links are deliberately deferred.
 
 The final submission page also instructs entrants to preserve submitted repository/video/application materials after the deadline until winners are announced. Future pre-deadline improvement work must remain distinct from this v1.0 checkpoint.
