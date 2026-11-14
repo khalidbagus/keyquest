@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .main {
@@ -22,12 +23,98 @@
 
 .footer {
   padding: var(--space-4);
-  text-align: center;
+  background-color: var(--color-bg-deep);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
-  border-top: 1px solid var(--color-secondary);
+  border-top: 1px solid var(--color-border);
 }
 
-.footer p {
+.footerInner {
+  max-width: var(--max-content-width);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.footerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.footerBrand {
   margin: 0;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.footerMeta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.footerControls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.motionToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  min-height: var(--min-touch-target);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.motionToggle:hover {
+  background-color: var(--color-surface-elevated);
+  border-color: var(--color-text-muted);
+}
+
+.motionToggle[aria-pressed='true'] {
+  border-color: var(--color-warning);
+  background-color: rgba(251, 191, 36, 0.14);
+}
+
+.motionIndicator {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .main {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .footerInner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .footerControls {
+    width: 100%;
+  }
+
+  .motionToggle {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-height: 700px) {
+  .main {
+    padding-block: var(--space-3);
+  }
 }

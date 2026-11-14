@@ -11,20 +11,31 @@
 .progress {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-4);
   padding: var(--space-3) var(--space-4);
   background-color: var(--color-surface);
-  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-sm);
+}
+
+.progressInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
 .progressLabel {
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--color-text);
 }
 
 .progressValue {
   color: var(--color-success);
-  font-weight: 500;
+  font-weight: 700;
+  font-family: var(--font-mono);
 }
 
 .progressHint {
@@ -32,32 +43,66 @@
   font-size: var(--font-size-sm);
 }
 
+.progressSegments {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 120px;
+  max-width: 240px;
+}
+
+.segmentEmpty,
+.segmentDiscovered,
+.segmentVerified {
+  height: 8px;
+  flex: 1;
+  border-radius: 999px;
+}
+
+.segmentEmpty {
+  background-color: var(--color-bg-deep);
+  border: 1px solid var(--color-border);
+}
+
+.segmentDiscovered {
+  background-color: rgba(251, 191, 36, 0.45);
+  border: 1px solid var(--color-warning);
+}
+
+.segmentVerified {
+  background-color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
 .resetButton {
   margin-left: auto;
   padding: var(--space-2) var(--space-4);
-  background-color: transparent;
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-text-muted);
+  background-color: var(--color-bg-deep);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
+  font-weight: 600;
   cursor: pointer;
   min-height: var(--min-touch-target);
 }
 
 .resetButton:hover {
   color: var(--color-text);
-  border-color: var(--color-text);
-  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-text-muted);
+  background-color: var(--color-surface-elevated);
 }
 
 .intro {
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-5);
   background-color: var(--color-surface);
-  border-radius: var(--border-radius-md);
+  border: 1px solid var(--color-border);
   border-left: 4px solid var(--color-primary);
+  border-radius: var(--border-radius-md);
 }
 
-.intro h3 {
+.intro h2 {
   margin: 0 0 var(--space-2);
   font-size: var(--font-size-lg);
 }
@@ -65,26 +110,35 @@
 .intro p {
   margin: 0;
   color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+}
+
+.intro strong {
+  color: var(--color-text);
 }
 
 .intro kbd {
-  padding: var(--space-1) var(--space-2);
-  background-color: var(--color-bg);
-  border: 1px solid var(--color-secondary);
-  border-radius: var(--border-radius-sm);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
+  padding: 1px 6px;
+  background-color: var(--color-bg-deep);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 .content {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-6);
+  align-items: start;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
   .content {
-    grid-template-columns: 1fr 400px;
+    grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
   }
 }
 
@@ -94,4 +148,10 @@
 
 .studioColumn {
   min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .progressSegments {
+    display: none;
+  }
 }

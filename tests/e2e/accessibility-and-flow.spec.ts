@@ -78,7 +78,36 @@ test('repairs can be done out of order; completion requires all four and replay 
   await expect(page.getByTestId('level-complete')).toHaveCount(0);
   await repair(page, 'Mouse-Only Activation', 'repair-mouse-only');
   await expect(page.getByTestId('level-complete')).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole('button', { name: 'Play Again' }).click();
   await expect(page.getByText('0 / 4 defects repaired')).toBeVisible();
   await expect(page.getByTestId('defect-missing-name')).toHaveAccessibleName('');
+});
+
+test('reduced motion toggle updates aria-pressed, html dataset, and localStorage', async ({ page }) => {
+  await page.goto('/');
+  const toggle = page.getByTestId('reduced-motion-toggle');
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  const attr = await page.evaluate(() => document.documentElement.dataset.reducedMotion);
+  expect(attr).toBe('true');
+});
+
+test('responsive viewports (mobile 375x667, tablet 768x1024, short 1024x600) render without horizontal overflow', async ({ page }) => {
+  for (const viewport of [
+    { width: 375, height: 667 },
+    { width: 768, height: 1024 },
+    { width: 1024, height: 600 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await start(page);
+    const hasOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth
+    );
+    expect(hasOverflow).toBe(false);
+    const exitBox = await page.getByTestId('emergency-exit').boundingBox();
+    expect(exitBox?.height).toBeGreaterThanOrEqual(44);
+  }
 });

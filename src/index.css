@@ -8,19 +8,29 @@
    ============================================ */
 
 :root {
-  /* Colors - Core Palette */
+  color-scheme: dark;
+
+  /* Colors - Core Palette (WCAG AA verified) */
   --color-bg: #1a1a2e;
+  --color-bg-deep: #0f1123;
   --color-surface: #16213e;
-  --color-primary: #c93050; /* Darker for 4.5:1 contrast with white text */
+  --color-surface-elevated: #1d2b4f;
+  --color-surface-card: #12192e;
+  --color-primary: #c93050; /* 4.7:1 contrast with #ffffff */
+  --color-primary-hover: #a82844;
   --color-secondary: #0f3460;
+  --color-border: #284275;
+  --color-border-subtle: rgba(234, 234, 234, 0.14);
   --color-text: #eaeaea;
-  --color-text-muted: #a0a0a0;
+  --color-text-muted: #b0b8c8; /* 7.8:1 against #1a1a2e, 7.1:1 against #16213e */
   --color-success: #4ade80;
   --color-warning: #fbbf24;
-  --color-error: #dc2626; /* Darker red for 4.5:1 contrast with white text */
+  --color-error: #dc2626; /* 4.8:1 contrast with #ffffff */
+  --color-accent-purple: #c4b5fd;
 
-  /* Focus indicator - 3:1 contrast against dark backgrounds */
+  /* Focus indicator - > 3:1 contrast against dark & light surfaces */
   --color-focus: #005fcc;
+  --color-focus-ring-outer: #60a5fa;
   --focus-outline-width: 3px;
   --focus-outline-offset: 2px;
 
@@ -29,12 +39,17 @@
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+  --space-5: 20px;
   --space-6: 24px;
   --space-8: 32px;
+  --space-10: 40px;
 
   /* Typography */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
     Ubuntu, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas,
+    monospace;
+  --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
   --font-size-lg: 1.25rem;
@@ -48,8 +63,14 @@
   --min-touch-target: 44px;
   --border-radius-sm: 4px;
   --border-radius-md: 8px;
+  --border-radius-lg: 12px;
 
-  /* Transitions */
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.38);
+  --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.5);
+
+  /* Transitions (kept <= 200ms per design system) */
   --transition-fast: 150ms ease;
   --transition-normal: 200ms ease;
 }
@@ -77,11 +98,24 @@ body {
   line-height: var(--line-height-body);
   color: var(--color-text);
   background-color: var(--color-bg);
+  background-image: radial-gradient(
+      circle at 15% 10%,
+      rgba(201, 48, 80, 0.08) 0%,
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 85% 85%,
+      rgba(15, 52, 96, 0.35) 0%,
+      transparent 55%
+    );
   min-height: 100vh;
+  min-height: 100dvh;
+  overflow-wrap: break-word;
 }
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -99,6 +133,7 @@ h6 {
   margin: 0 0 var(--space-4);
   line-height: var(--line-height-heading);
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 h1 {
@@ -116,6 +151,11 @@ h3 {
 
 p {
   margin: 0 0 var(--space-4);
+}
+
+code,
+kbd {
+  font-family: var(--font-mono);
 }
 
 /* ============================================
@@ -148,11 +188,13 @@ button {
   background-color: var(--color-primary);
   color: #ffffff;
   cursor: pointer;
-  transition: background-color var(--transition-fast);
+  transition: background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 button:hover:not(:disabled) {
-  background-color: #a82844;
+  background-color: var(--color-primary-hover);
 }
 
 button:disabled {
@@ -172,8 +214,11 @@ button:disabled {
   padding: var(--space-2) var(--space-4);
   background-color: var(--color-surface);
   color: var(--color-text);
+  border: 2px solid var(--color-focus-ring-outer);
+  font-weight: 600;
   text-decoration: none;
   border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-md);
 }
 
 .skip-link:focus {
@@ -181,7 +226,7 @@ button:disabled {
 }
 
 /* ============================================
-   Reduced Motion
+   Reduced Motion (System + Manual Toggle)
    ============================================ */
 
 @media (prefers-reduced-motion: reduce) {
@@ -192,6 +237,26 @@ button:disabled {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+:root[data-reduced-motion='true'] *,
+:root[data-reduced-motion='true'] *::before,
+:root[data-reduced-motion='true'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ============================================
+   Forced Colors Mode (High Contrast)
+   ============================================ */
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
   }
 }
 

@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useRef } from 'react';
+import { useGame } from '../../context/GameContext';
 import { MidnightCheckout } from '../MidnightCheckout/MidnightCheckout';
 import styles from './ChallengeSandbox.module.css';
 
@@ -12,8 +13,17 @@ interface ChallengeSandboxProps {
   onDefectInteraction?: (defectType: string) => void;
 }
 
-export function ChallengeSandbox({ onDefectInteraction }: ChallengeSandboxProps) {
+export function ChallengeSandbox({
+  onDefectInteraction,
+}: ChallengeSandboxProps) {
   const announcerRef = useRef<HTMLDivElement>(null);
+  const { progress } = useGame();
+
+  const verifiedCount = Object.values(progress.defects).filter(
+    (d) => d.verified
+  ).length;
+  const remainingCurses = 4 - verifiedCount;
+  const allRepaired = remainingCurses === 0;
 
   // Announce sandbox entry to screen readers
   useEffect(() => {
@@ -34,7 +44,7 @@ export function ChallengeSandbox({ onDefectInteraction }: ChallengeSandboxProps)
 
   return (
     <div
-      className={styles.sandbox}
+      className={`${styles.sandbox} ${allRepaired ? styles.sandboxRestored : ''}`}
       role="region"
       aria-label="Challenge sandbox with intentional accessibility defects"
       data-testid="challenge-sandbox"
@@ -47,9 +57,28 @@ export function ChallengeSandbox({ onDefectInteraction }: ChallengeSandboxProps)
         className="visually-hidden"
       />
 
+      {/* Sandbox Containment Header */}
+      <div className={styles.containmentBar} aria-hidden="true">
+        <span className={styles.containmentTag}>
+          <span className={styles.containmentIcon}>🕯️</span>
+          ISOLATED CHALLENGE SANDBOX
+        </span>
+        <span
+          className={
+            allRepaired ? styles.curseBadgeCleared : styles.curseBadgeActive
+          }
+        >
+          {allRepaired
+            ? '✓ All 4 Curses Lifted'
+            : `${remainingCurses} Accessibility ${
+                remainingCurses === 1 ? 'Curse' : 'Curses'
+              } Active`}
+        </span>
+      </div>
+
       {/* Visible disclaimer */}
       <div className={styles.disclaimer}>
-        <span aria-hidden="true">⚠️</span>
+        <span aria-hidden="true">⚠️</span>{' '}
         This area contains intentional accessibility defects for educational
         purposes.
       </div>

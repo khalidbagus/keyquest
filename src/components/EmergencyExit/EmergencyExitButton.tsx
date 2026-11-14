@@ -27,7 +27,7 @@ export function EmergencyExitButton() {
         if (openDialog) {
           return;
         }
-        
+
         event.preventDefault();
         handleExit();
       }

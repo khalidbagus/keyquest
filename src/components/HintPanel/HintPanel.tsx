@@ -39,18 +39,38 @@ export function HintPanel() {
       aria-labelledby="hint-panel-title"
       data-testid="hint-panel"
     >
-      <h3 id="hint-panel-title" className={styles.title}>
-        <span aria-hidden="true">💡</span> Need a Hint?
-      </h3>
+      <div className={styles.headerRow}>
+        <div className={styles.titleCluster}>
+          <h3 id="hint-panel-title" className={styles.title}>
+            <span aria-hidden="true">💡</span> Need a Hint?
+          </h3>
+          {target && (
+            <div className={styles.levelPips} aria-hidden="true">
+              {[1, 2, 3].map((lvl) => (
+                <span
+                  key={lvl}
+                  className={
+                    hintLevel && lvl <= hintLevel
+                      ? styles.pipActive
+                      : styles.pipInactive
+                  }
+                >
+                  L{lvl}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
 
-      <button
-        type="button"
-        className={styles.hintButton}
-        onClick={handleRequestHint}
-        data-testid="hint-button"
-      >
-        Get Hint
-      </button>
+        <button
+          type="button"
+          className={styles.hintButton}
+          onClick={handleRequestHint}
+          data-testid="hint-button"
+        >
+          Get Hint
+        </button>
+      </div>
 
       {/* Polite live region: one announcement per hint request */}
       <div className={styles.display} role="status" data-testid="hint-display">
@@ -74,7 +94,9 @@ export function HintPanel() {
               {HINT_LEVEL_LABELS[hintLevel]}) for{' '}
               <strong>{DEFECT_LABELS[target]}</strong>
             </p>
-            <p className={styles.hintStatus}>{getHintStatusContext(targetState)}</p>
+            <p className={styles.hintStatus}>
+              {getHintStatusContext(targetState)}
+            </p>
             <p className={styles.hintText} data-testid="hint-text">
               {activeHint.text}
             </p>

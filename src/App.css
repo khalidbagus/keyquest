@@ -7,10 +7,12 @@
 .keyquest-focus-repaired:focus-visible {
   outline: 3px solid var(--color-focus, #005fcc);
   outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(96, 165, 250, 0.35);
 }
 
 /* Override any inline outline:none for repaired elements */
 .keyquest-focus-repaired:focus {
   outline: 3px solid var(--color-focus, #005fcc) !important;
   outline-offset: 2px !important;
+  box-shadow: 0 0 0 5px rgba(96, 165, 250, 0.35);
 }
