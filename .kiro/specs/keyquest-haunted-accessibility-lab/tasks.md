@@ -368,8 +368,8 @@ If falling behind schedule, cut in this order:
     - Verify repairs persist through re-renders until explicit reset
     - **Validates: Requirements 4.3, 5.3, 6.3, 7.3**
 
-- [ ] 12. Hint System
-  - [ ] 12.1 Create HintDefinition data
+- [x] 12. Hint System
+  - [x] 12.1 Create HintDefinition data
     - Define 3 levels of hints for each defect type per design spec
     - Level 1: General guidance
     - Level 2: Specific direction
@@ -377,7 +377,7 @@ If falling behind schedule, cut in this order:
     - Store in hint registry module
     - _Requirements: 10.3, 10.4_
 
-  - [ ] 12.2 Implement Hint Panel UI
+  - [x] 12.2 Implement Hint Panel UI
     - Create `HintPanel` component with hint button
     - Ensure button is always visible and keyboard-accessible
     - Add `data-testid="hint-button"` attribute
@@ -386,7 +386,7 @@ If falling behind schedule, cut in this order:
     - Write Playwright test: hint button accessible and functional
     - _Requirements: 10.1, 10.2, 10.5, 18.1_
 
-  - [ ] 12.3 Implement progressive hint system
+  - [x] 12.3 Implement progressive hint system
     - Track hint level per defect in game state
     - Show contextual hint based on current progress (undiscovered vs discovered vs repair attempted)
     - Increment hint level with each request (max level 3)
@@ -398,6 +398,7 @@ If falling behind schedule, cut in this order:
     - **Property 6: Hint Progression**
     - Verify hint level increases monotonically from 0 to 3, stays at 3 thereafter
     - **Validates: Requirements 10.3, 10.4**
+    - _Note: Covered by reducer unit tests in hintProgression.test.ts_
 
 - [ ] 13. Checkpoint - Full Feature Set
   - Ensure all tests pass, ask the user if questions arise.
