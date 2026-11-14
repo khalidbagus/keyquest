@@ -4,6 +4,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 /**
  * Creates a valid saved progress state with specified repairs
@@ -63,6 +64,13 @@ test.describe('Progress Restoration Dialog', () => {
     // Clear localStorage before each test by navigating and clearing
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
+  });
+
+  test('restore dialog has a name and passes axe', async ({ page }) => {
+    await setSavedProgress(page, createSavedProgress({ discoveredDefects: ['invisible-focus'] }));
+    await page.goto('/');
+    await expect(page.getByRole('dialog')).toHaveAccessibleName(/\S/);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   });
 
   test('shows restore dialog when meaningful saved progress exists', async ({
