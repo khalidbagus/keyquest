@@ -1,0 +1,16 @@
+/**
+ * App-specific styles
+ * Additional focus styles for repaired elements
+ */
+
+/* Focus repair class - applied by RepairEngine */
+.keyquest-focus-repaired:focus-visible {
+  outline: 3px solid var(--color-focus, #005fcc);
+  outline-offset: 2px;
+}
+
+/* Override any inline outline:none for repaired elements */
+.keyquest-focus-repaired:focus {
+  outline: 3px solid var(--color-focus, #005fcc) !important;
+  outline-offset: 2px !important;
+}

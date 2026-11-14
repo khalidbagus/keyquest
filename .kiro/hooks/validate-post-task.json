@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Validate after spec task completion",
+      "trigger": "PostTaskExec",
+      "description": "Runs typecheck and unit tests after a spec task is completed to catch issues early",
+      "action": {
+        "type": "command",
+        "command": "npm run typecheck && npm run test:unit",
+        "timeout": 120
+      }
+    }
+  ]
+}

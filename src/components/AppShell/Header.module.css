@@ -1,0 +1,48 @@
+/**
+ * Header Styles
+ */
+
+.header {
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-secondary);
+  padding: var(--space-3) var(--space-4);
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: var(--max-content-width);
+  margin: 0 auto;
+  gap: var(--space-4);
+}
+
+.branding {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: var(--font-size-xl);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.titleIcon {
+  font-size: 1.5rem;
+}
+
+.subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}

@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Accessibility review for interactive components",
+      "trigger": "PostFileSave",
+      "description": "Advisory review of accessibility concerns when React components are saved",
+      "matcher": "\\.(tsx|jsx)$",
+      "action": {
+        "type": "agent",
+        "prompt": "Review the saved file for potential accessibility issues based on the project's accessibility steering rules. This is an advisory review only, not an authoritative audit. Check for:\n\n- Missing semantic HTML (divs used instead of buttons, nav, main, etc.)\n- Missing accessible names on interactive elements\n- Keyboard navigation gaps (onClick without onKeyDown)\n- Missing focus management\n- Missing aria-live regions for dynamic content\n- Motion/animation without reduced-motion support\n\nIf the file touches the challenge sandbox (data-testid=\"challenge-sandbox\"), note that intentional defects there are expected. Only flag issues in app shell code.\n\nKeep the review brief and actionable. If no issues are found, say so in one sentence."
+      }
+    }
+  ]
+}

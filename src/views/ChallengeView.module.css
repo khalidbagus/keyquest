@@ -1,0 +1,78 @@
+/**
+ * Challenge View Styles
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface);
+  border-radius: var(--border-radius-sm);
+}
+
+.progressLabel {
+  font-weight: 600;
+}
+
+.progressValue {
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+.progressHint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.intro {
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+  border-radius: var(--border-radius-md);
+  border-left: 4px solid var(--color-primary);
+}
+
+.intro h3 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-lg);
+}
+
+.intro p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.intro kbd {
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-secondary);
+  border-radius: var(--border-radius-sm);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+}
+
+@media (min-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr 400px;
+  }
+}
+
+.sandboxColumn {
+  min-width: 0;
+}
+
+.studioColumn {
+  min-width: 0;
+}

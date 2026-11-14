@@ -1,0 +1,109 @@
+/**
+ * Repair Studio Styles
+ */
+
+.studio {
+  background-color: var(--color-surface);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-6);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.card {
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-secondary);
+  border-radius: var(--border-radius-sm);
+  padding: var(--space-4);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.cardTitle {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.statusBadge {
+  font-size: var(--font-size-sm);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+}
+
+.statusUndiscovered {
+  background-color: var(--color-secondary);
+  color: var(--color-text-muted);
+}
+
+.statusDiscovered {
+  background-color: rgba(251, 191, 36, 0.2);
+  color: var(--color-warning);
+}
+
+.statusRepaired {
+  background-color: rgba(74, 222, 128, 0.2);
+  color: var(--color-success);
+}
+
+.statusVerified {
+  background-color: var(--color-success);
+  color: #1a1a1a;
+}
+
+.cardDescription {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-3);
+}
+
+.repairButton {
+  width: 100%;
+}
+
+.repairButton:disabled {
+  background-color: var(--color-secondary);
+}
+
+.feedback {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background-color: rgba(74, 222, 128, 0.1);
+  border-left: 3px solid var(--color-success);
+  border-radius: var(--border-radius-sm);
+}
+
+.feedbackTitle {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-success);
+  margin: 0 0 var(--space-2);
+}
+
+.feedbackText {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}

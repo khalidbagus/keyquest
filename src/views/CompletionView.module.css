@@ -1,0 +1,134 @@
+/**
+ * Completion View Styles
+ */
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  padding: var(--space-4);
+}
+
+.card {
+  background-color: var(--color-surface);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-8);
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+}
+
+.header {
+  margin-bottom: var(--space-4);
+}
+
+.icon {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.title {
+  font-size: var(--font-size-2xl);
+  color: var(--color-success);
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-6);
+}
+
+.summarySection {
+  margin-bottom: var(--space-6);
+  text-align: left;
+}
+
+.sectionTitle {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-secondary);
+}
+
+.defectList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.defectItem {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  align-items: flex-start;
+}
+
+.defectCheck {
+  color: var(--color-success);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.defectInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.defectName {
+  font-weight: 500;
+}
+
+.wcagRef {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.stats {
+  display: flex;
+  gap: var(--space-6);
+  justify-content: center;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.statLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.statValue {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.primaryButton {
+  padding: var(--space-3) var(--space-6);
+  background-color: var(--color-primary);
+  font-size: var(--font-size-base);
+}
+
+.secondaryButton {
+  padding: var(--space-3) var(--space-6);
+  background-color: var(--color-secondary);
+  font-size: var(--font-size-base);
+}
+
+.secondaryButton:hover {
+  background-color: #1a3a5c;
+}
