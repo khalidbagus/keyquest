@@ -6,6 +6,8 @@ The root MIT License applies to KeyQuest project contributions. It does not repl
 
 The inspected lockfile resolves React and React DOM to 19.3.1; both declare MIT licensing. Their distribution notices are retained in [React](release/licenses/react-LICENSE.txt) and [React DOM](release/licenses/react-dom-LICENSE.txt). Preserve required notices when redistributing bundled code.
 
+KeyQuest v2 also bundles the self-hosted, patched Rive Web 2.51.0 Canvas Advanced Lite runtime (`vendor/rive-canvas` and `public/rive/canvas_advanced_c2d_only.wasm`). The [runtime patch](tools/rive-splash-demo/clear-splash.patch) exposes a binding for clearing the startup splash on an artboard instance. Upstream MIT notices for Rive's C++ runtime and WebAssembly bindings are retained in [rive-runtime-LICENSE.txt](public/rive/rive-runtime-LICENSE.txt) and [rive-wasm-LICENSE.txt](public/rive/rive-wasm-LICENSE.txt).
+
 ## Development and testing dependencies
 
 The lockfile records the exact package versions and declared licenses. Major tools include:

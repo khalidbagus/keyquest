@@ -1,6 +1,8 @@
 /** Application shell around the real application-module loading boundary. */
-import { useEffect, useRef, useState, type ComponentType } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from 'react';
+import { ReducedMotionProvider } from './context/ReducedMotionContext';
 import { GameProvider, useGame } from './context/GameContext';
+import { MascotProvider } from './context/MascotContext';
 import { AppShell } from './components/AppShell';
 import './App.css';
 
@@ -27,30 +29,40 @@ function ApplicationLoader() {
         dispatch({ type: 'LOADING_COMPLETE' });
       } catch (error: unknown) {
         if (cancelled) return;
-        dispatch({ type: 'LOADING_ERROR', error: {
-          code: 'APPLICATION_MODULE_LOAD_FAILED',
-          message: error instanceof Error ? error.message : String(error),
-          userMessage: 'The application files could not be loaded. Check your connection and retry.',
-          recoverable: true,
-          timestamp: Date.now(),
-        } });
+        dispatch({
+          type: 'LOADING_ERROR',
+          error: {
+            code: 'APPLICATION_MODULE_LOAD_FAILED',
+            message: error instanceof Error ? error.message : String(error),
+            userMessage:
+              'The application files could not be loaded. Check your connection and retry.',
+            recoverable: true,
+            timestamp: Date.now(),
+          },
+        });
       }
     }
     void loadApplication();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [dispatch]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (state.phase === 'error') errorHeading.current?.focus();
   }, [state.phase]);
 
   if (state.phase === 'error') {
     return (
       <div role="alert" data-testid="loading-error">
-        <h2 ref={errorHeading} tabIndex={-1}>Unable to load KeyQuest</h2>
+        <h2 ref={errorHeading} tabIndex={-1}>
+          Unable to load KeyQuest
+        </h2>
         <p>{state.error.userMessage}</p>
         {/* A fresh document also retries module failures cached by the browser. */}
-        <button type="button" onClick={() => window.location.reload()}>Retry loading</button>
+        <button type="button" onClick={() => window.location.reload()}>
+          Retry loading
+        </button>
       </div>
     );
   }
@@ -61,7 +73,13 @@ function ApplicationLoader() {
         <h2>Loading KeyQuest</h2>
         <p>Loading application files…</p>
         <progress aria-label="Application files loading" />
-        <p ref={loadingAnnouncement} role="status" aria-live="polite" aria-atomic="true" className="visually-hidden" />
+        <p
+          ref={loadingAnnouncement}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="visually-hidden"
+        />
       </div>
     );
   }
@@ -71,8 +89,14 @@ function ApplicationLoader() {
 
 export default function App() {
   return (
-    <GameProvider>
-      <AppShell><ApplicationLoader /></AppShell>
-    </GameProvider>
+    <ReducedMotionProvider>
+      <GameProvider>
+        <MascotProvider>
+          <AppShell>
+            <ApplicationLoader />
+          </AppShell>
+        </MascotProvider>
+      </GameProvider>
+    </ReducedMotionProvider>
   );
 }

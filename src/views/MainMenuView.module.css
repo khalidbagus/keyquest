@@ -1,5 +1,5 @@
 /**
- * Main Menu View Styles
+ * Main Menu View Styles (v2 Twilight-Plum Apothecary Split Hero)
  */
 
 .container {
@@ -7,7 +7,7 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-6);
-  max-width: 960px;
+  max-width: 1080px;
   margin: 0 auto;
   padding-block: var(--space-2) var(--space-6);
 }
@@ -15,35 +15,31 @@
 .heroCard {
   width: 100%;
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--border-radius-lg);
-  padding: var(--space-8) var(--space-6);
-  text-align: center;
-  box-shadow: var(--shadow-md);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  padding: var(--space-6);
+  box-shadow: var(--shadow-lg);
+  display: grid;
+  grid-template-columns: 1fr;
   gap: var(--space-6);
+  align-items: center;
   position: relative;
 }
 
-.heroHeader {
+@media (min-width: 840px) {
+  .heroCard {
+    grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+    padding: var(--space-8);
+    gap: var(--space-8);
+  }
+}
+
+.heroCopyColumn {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  max-width: 660px;
-}
-
-.emblemWrapper {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: var(--space-1);
-}
-
-.emblemSvg {
-  display: block;
+  align-items: flex-start;
+  gap: var(--space-4);
+  text-align: left;
 }
 
 .caseBadge {
@@ -55,30 +51,36 @@
   color: var(--color-warning);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.04em;
 }
 
 .heading {
-  font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+  font-size: clamp(1.85rem, 1.35rem + 2vw, 2.75rem);
   margin: 0;
   color: var(--color-text);
+  line-height: 1.12;
 }
 
 .description {
-  max-width: 62ch;
+  max-width: 58ch;
   color: var(--color-text-muted);
   margin: 0;
   font-size: var(--font-size-base);
   line-height: 1.65;
 }
 
+.description strong {
+  color: var(--color-text);
+}
+
 .ctaGroup {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-3);
   width: 100%;
+  margin-top: var(--space-1);
 }
 
 .startButton {
@@ -86,20 +88,21 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
+  font-family: var(--font-display);
   font-size: var(--font-size-lg);
   font-weight: 700;
-  padding: var(--space-4) var(--space-8);
+  padding: var(--space-3) var(--space-8);
   min-height: 54px;
   background-color: var(--color-primary);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-sm);
 }
 
 .startButton:hover {
   background-color: var(--color-primary-hover);
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.45);
 }
 
 .startArrow {
@@ -120,10 +123,107 @@
   padding: 1px 6px;
   background-color: var(--color-bg-deep);
   border: 1px solid var(--color-border);
-  border-radius: 3px;
+  border-radius: 4px;
   color: var(--color-text);
   font-size: 0.8125rem;
   font-weight: 600;
+}
+
+/* Right Column: Live Animated Companion Stage */
+.heroStageColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.companionPlate {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-bg-deep);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+}
+
+.companionIdentity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.companionName {
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.companionAction {
+  font-size: var(--font-size-xs);
+  color: var(--color-warning);
+}
+
+.costumeButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  min-height: var(--min-touch-target);
+  background-color: var(--color-secondary);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.costumeButton:hover {
+  background-color: var(--color-secondary-hover);
+  border-color: var(--color-warning);
+}
+
+.quickRoster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.quickPill {
+  width: 44px;
+  height: 44px;
+  padding: 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 42%, #f6effd 0%, #dfccef 100%);
+  border: 2px solid var(--color-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quickPill:hover {
+  background: radial-gradient(circle at 50% 42%, #ffffff 0%, #e7d7f6 100%);
+  border-color: var(--color-warning);
+}
+
+.quickPillActive {
+  border-color: var(--color-warning);
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.35);
+}
+
+.quickPillImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 /* Mission Briefing 3-Column Grid */
@@ -152,8 +252,16 @@
 }
 
 .briefingIcon {
-  font-size: 1.25rem;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background-color: var(--color-bg-deep);
+  border: 1px solid var(--color-border);
+  color: var(--color-warning);
+  flex-shrink: 0;
 }
 
 .briefingTitle {
@@ -173,7 +281,7 @@
   color: var(--color-text);
 }
 
-/* Four Curses Preview */
+/* Four Curse Potions Preview */
 .cursesSection {
   width: 100%;
   background-color: var(--color-surface-card);
@@ -226,32 +334,59 @@
 .curseItem {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-md);
   padding: var(--space-3);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
   text-align: left;
 }
 
-.curseMeta {
+.curseTopRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
 }
 
+.potionThumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background-color: var(--color-bg-deep);
+  border: 1px solid var(--color-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.potionImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.curseMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
 .wcagTag {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   color: var(--color-warning);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .levelTag {
   font-size: var(--font-size-xs);
   padding: 1px 6px;
-  border-radius: 3px;
+  border-radius: 4px;
   background-color: var(--color-bg-deep);
   color: var(--color-text-muted);
   border: 1px solid var(--color-border);
@@ -288,6 +423,10 @@
   gap: var(--space-2);
 }
 
+.disclaimerIcon {
+  flex-shrink: 0;
+}
+
 .disclaimer p {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
@@ -320,10 +459,5 @@
   .heroCard {
     padding: var(--space-5);
     gap: var(--space-4);
-  }
-
-  .emblemSvg {
-    width: 52px;
-    height: 52px;
   }
 }

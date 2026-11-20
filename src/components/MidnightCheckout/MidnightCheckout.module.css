@@ -1,7 +1,7 @@
 /**
- * Midnight Checkout Styles
+ * Midnight Checkout Styles (v2 Twilight-Plum Apothecary)
  * Contains intentional accessibility defects inside the isolated sandbox.
- * Note: Uses solid background-color (#16213e) without background-image so
+ * Note: Uses solid background-color (#231936) without background-image so
  * axe-core color-contrast inspection runs deterministically on .productPrice.
  */
 
@@ -9,8 +9,12 @@
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-md);
-  padding: var(--space-6);
+  padding: var(--space-5);
   position: relative;
+}
+
+.checkoutPurified {
+  border-color: rgba(74, 222, 128, 0.55);
 }
 
 .storeHeader {
@@ -18,8 +22,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
-  margin-bottom: var(--space-5);
-  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -34,56 +38,46 @@
   font-size: var(--font-size-xs);
   color: var(--color-warning);
   letter-spacing: 0.06em;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .shopTitle {
   margin: 0;
+  font-family: var(--font-display);
   color: var(--color-text);
   font-size: var(--font-size-xl);
 }
 
 .product {
   display: flex;
-  gap: var(--space-5);
-  margin-bottom: var(--space-5);
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
   align-items: flex-start;
 }
 
 .productImage {
-  width: 116px;
-  height: 116px;
+  width: 112px;
+  height: 112px;
   background-color: var(--color-bg-deep);
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
   border-radius: var(--border-radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  padding: 6px;
 }
 
-.candleSvg {
+.productImagePurified {
+  border-color: var(--color-warning);
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.28);
+}
+
+.candleImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   display: block;
-}
-
-@keyframes candleFlicker {
-  0%,
-  100% {
-    transform: scale(1) translateY(0);
-    opacity: 0.95;
-  }
-  50% {
-    transform: scale(1.04, 0.96) translateY(-1px);
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  :root:not([data-reduced-motion='true']) .flameOuter,
-  :root:not([data-reduced-motion='true']) .flameHalo {
-    transform-origin: 60px 42px;
-    animation: candleFlicker 2.8s ease-in-out infinite;
-  }
 }
 
 .productInfo {
@@ -112,11 +106,12 @@
 .stockBadge {
   font-size: var(--font-size-xs);
   color: var(--color-success);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .productName {
   margin: 0 0 var(--space-2);
+  font-family: var(--font-display);
   color: var(--color-text);
   font-size: var(--font-size-lg);
 }
@@ -125,13 +120,15 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   margin-bottom: var(--space-3);
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
 .priceRow {
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
+  flex-wrap: wrap;
+  cursor: pointer;
 }
 
 .priceLabel {
@@ -142,8 +139,8 @@
 }
 
 /* DEFECT: Insufficient Contrast
- * Color #555555 on dark surface background (#16213e) has ~2.09:1 ratio.
- * Fails WCAG 1.4.3 even for large text (requires >= 3:1 for large, 4.5:1 normal).
+ * Color #555555 on solid #231936 surface has ~2.0:1 ratio.
+ * Fails WCAG 1.4.3 even for large text (requires >= 3:1 large, 4.5:1 normal).
  */
 .productPrice {
   font-size: var(--font-size-xl);
@@ -151,6 +148,12 @@
   color: #555555;
   margin: 0;
   font-family: var(--font-mono);
+}
+
+.contrastFlagged {
+  outline: 2px dashed var(--color-warning);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 .controls {
@@ -201,7 +204,7 @@
   min-height: var(--min-touch-target);
   padding: var(--space-2) var(--space-6);
   background-color: var(--color-success);
-  color: #111827;
+  color: #110c1b;
   border-radius: var(--border-radius-sm);
   font-weight: 700;
   cursor: pointer;
@@ -220,19 +223,23 @@
   width: var(--min-touch-target);
   height: var(--min-touch-target);
   background-color: var(--color-bg-deep);
+  color: var(--color-text);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.35rem;
   flex-shrink: 0;
 }
 
 .cartIcon:hover {
   background-color: var(--color-secondary);
-  border-color: var(--color-text-muted);
+  border-color: var(--color-warning);
+}
+
+.cartSvg {
+  display: block;
 }
 
 /* Order Ledger */
@@ -257,7 +264,7 @@
 
 .ledgerFree {
   color: var(--color-success);
-  font-weight: 600;
+  font-weight: 700;
   font-family: var(--font-mono);
 }
 
@@ -271,6 +278,12 @@
   color: var(--color-text);
 }
 
+.buyWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 /* DEFECT: Invisible Focus
  * Focus indicator is removed with no alternative.
  */
@@ -280,8 +293,9 @@
   padding: var(--space-3) var(--space-4);
   background-color: var(--color-primary);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: var(--border-radius-sm);
+  font-family: var(--font-display);
   font-size: var(--font-size-lg);
   font-weight: 700;
   cursor: pointer;
@@ -290,6 +304,36 @@
 
 .buyButton:hover {
   background-color: var(--color-primary-hover);
+}
+
+/* Ghost Vision Callout Pills (purely visual overlays, aria-hidden) */
+.inspectAnchor {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.visionPill,
+.visionInlinePill {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.visionPillFail {
+  background-color: #3b1322;
+  color: #fda4af;
+  border: 1px solid #f43f5e;
+}
+
+.visionPillPass {
+  background-color: #102a1f;
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
 }
 
 @media (max-width: 640px) {
@@ -315,6 +359,10 @@
 
   .quantityControl {
     justify-content: space-between;
+  }
+
+  .inspectAnchor {
+    align-items: stretch;
   }
 
   .addButton {

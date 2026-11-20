@@ -1,41 +1,33 @@
 /**
- * Main Menu View
- * Landing and onboarding experience for KeyQuest: The Haunted Accessibility Lab
- * Requirements: 2.1, 13.4, 14.2, 14.6
+ * Main Menu View (v2 Twilight-Plum Apothecary Edition)
+ * Split Hero with live Rive companion stage, Costume Locker access,
+ * Mission Briefing, and 4 illustrated Curse Potion cards.
+ * Keyboard contract preserved: Start Challenge remains the first focusable control in <main>.
  */
 
+import { useState, useRef } from 'react';
 import { useGame } from '../context/GameContext';
+import { useMascot } from '../context/MascotContext';
+import { RiveMascot } from '../components/RiveMascot';
+import { CostumeLockerModal } from '../components/CostumeLocker';
+import { CURSE_CATALOG } from '../registry/patchRegistry';
+import { MASCOT_ROSTER } from '../registry/mascotRegistry';
+import {
+  CompassQuestIcon,
+  CostumeMaskIcon,
+  KeyboardKeyIcon,
+  LanternIcon,
+  ShieldNoticeIcon,
+} from '../components/Icons/ApothecaryIcons';
 import styles from './MainMenuView.module.css';
 
-const CURSE_PREVIEW = [
-  {
-    code: 'WCAG 2.4.7',
-    level: 'AA',
-    title: 'Invisible Focus',
-    symptom: 'Focus outline stripped with outline: none',
-  },
-  {
-    code: 'WCAG 2.1.1',
-    level: 'A',
-    title: 'Mouse-Only Activation',
-    symptom: 'Clickable <div> ignores Enter & Space keys',
-  },
-  {
-    code: 'WCAG 4.1.2',
-    level: 'A',
-    title: 'Missing Accessible Name',
-    symptom: 'Icon-only cart button announces nothing',
-  },
-  {
-    code: 'WCAG 1.4.3',
-    level: 'AA',
-    title: 'Insufficient Contrast',
-    symptom: 'Faint price text fails 4.5:1 minimum contrast',
-  },
-];
+const QUICK_PICKS = MASCOT_ROSTER.slice(0, 5);
 
 export function MainMenuView() {
   const { dispatch } = useGame();
+  const { companion, companionSignal, setCompanionId } = useMascot();
+  const [lockerOpen, setLockerOpen] = useState(false);
+  const costumeButtonRef = useRef<HTMLButtonElement>(null);
 
   function handleStartChallenge() {
     dispatch({ type: 'START_CHALLENGE' });
@@ -43,53 +35,9 @@ export function MainMenuView() {
 
   return (
     <div className={styles.container}>
-      {/* Hero Banner */}
+      {/* Split Storybook Hero */}
       <section className={styles.heroCard} aria-labelledby="menu-hero-heading">
-        <div className={styles.heroHeader}>
-          <div className={styles.emblemWrapper} aria-hidden="true">
-            <svg
-              viewBox="0 0 88 88"
-              width="72"
-              height="72"
-              className={styles.emblemSvg}
-              aria-hidden="true"
-              focusable="false"
-            >
-              <circle
-                cx="44"
-                cy="44"
-                r="40"
-                fill="#0f1123"
-                stroke="#284275"
-                strokeWidth="2"
-              />
-              <circle
-                cx="44"
-                cy="44"
-                r="34"
-                fill="none"
-                stroke="#fbbf24"
-                strokeWidth="1.5"
-                strokeDasharray="4 4"
-              />
-              {/* Keyhole arch */}
-              <path
-                d="M32 58L36 42A12 12 0 1 1 52 42L56 58Z"
-                fill="#16213e"
-                stroke="#fbbf24"
-                strokeWidth="2.2"
-                strokeLinejoin="round"
-              />
-              <circle cx="44" cy="34" r="4.5" fill="#e94560" />
-              <path
-                d="M44 38.5V51"
-                stroke="#fbbf24"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              />
-            </svg>
-          </div>
-
+        <div className={styles.heroCopyColumn}>
           <span className={styles.caseBadge}>
             CASE FILE #A11Y-01 · LEVEL 1: THE MIDNIGHT CHECKOUT
           </span>
@@ -99,32 +47,89 @@ export function MainMenuView() {
           </h2>
 
           <p className={styles.description}>
-            Enter the Midnight Checkout — a haunted apothecary storefront where
-            four real accessibility curses trap keyboard, screen reader, and
-            low-vision shoppers. Inspect the broken interface, apply code-backed
-            DOM and CSS repairs, verify each improvement, and escape before the
-            shop closes!
+            Step inside the <strong>Midnight Checkout</strong> — a haunted
+            apothecary storefront where four real accessibility curses trap
+            keyboard, screen reader, and low-vision shoppers. Equip{' '}
+            <strong>Ghost Vision</strong>, craft real DOM &amp; CSS patches, and
+            banish every curse with your animated haunting companion!
           </p>
+
+          {/* Primary CTA — Strictly first focusable element inside <main> */}
+          <div className={styles.ctaGroup}>
+            <button
+              type="button"
+              className={styles.startButton}
+              onClick={handleStartChallenge}
+              data-testid="start-challenge"
+            >
+              <span>Start Challenge</span>
+              <span className={styles.startArrow} aria-hidden="true">
+                →
+              </span>
+            </button>
+
+            <p className={styles.ctaSubtext}>
+              Keyboard ready: Press <kbd>Enter</kbd> or <kbd>Space</kbd> to
+              begin · Press <kbd>Escape</kbd> anytime to exit safely
+            </p>
+          </div>
         </div>
 
-        {/* Primary CTA - First focusable element in <main> */}
-        <div className={styles.ctaGroup}>
-          <button
-            type="button"
-            className={styles.startButton}
-            onClick={handleStartChallenge}
-            data-testid="start-challenge"
-          >
-            <span>Start Challenge</span>
-            <span className={styles.startArrow} aria-hidden="true">
-              →
-            </span>
-          </button>
+        {/* Live Animated Rive Mascot Stage + Costume Switcher */}
+        <div className={styles.heroStageColumn}>
+          <RiveMascot
+            mascot={companion}
+            signal={companionSignal}
+            initialTrigger="greet"
+            variant="hero"
+            size={240}
+          />
 
-          <p className={styles.ctaSubtext}>
-            Keyboard ready: Press <kbd>Enter</kbd> or <kbd>Space</kbd> to begin
-            · Press <kbd>Escape</kbd> anytime to exit safely
-          </p>
+          <div className={styles.companionPlate}>
+            <div className={styles.companionIdentity}>
+              <span className={styles.companionName}>{companion.name}</span>
+              <span className={styles.companionAction}>
+                Signature: {companion.signatureAction}
+              </span>
+            </div>
+
+            <button
+              ref={costumeButtonRef}
+              type="button"
+              className={styles.costumeButton}
+              onClick={() => setLockerOpen(true)}
+              data-testid="open-costume-locker"
+            >
+              <CostumeMaskIcon size={16} />
+              <span>Costumes (10)</span>
+            </button>
+          </div>
+
+          <div
+            className={styles.quickRoster}
+            aria-label="Quick companion switcher"
+          >
+            {QUICK_PICKS.map((ghost) => {
+              const active = ghost.id === companion.id;
+              return (
+                <button
+                  key={ghost.id}
+                  type="button"
+                  className={`${styles.quickPill} ${active ? styles.quickPillActive : ''}`}
+                  onClick={() => setCompanionId(ghost.id)}
+                  aria-label={`Select ${ghost.name}`}
+                  aria-pressed={active}
+                >
+                  <img
+                    src={ghost.posterUrl}
+                    alt=""
+                    className={styles.quickPillImg}
+                    decoding="async"
+                  />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 
@@ -136,71 +141,82 @@ export function MainMenuView() {
         <div className={styles.briefingCard}>
           <div className={styles.briefingHeader}>
             <span className={styles.briefingIcon} aria-hidden="true">
-              🧭
+              <CompassQuestIcon size={20} />
             </span>
-            <h3 className={styles.briefingTitle}>1. Your Mission</h3>
+            <h3 className={styles.briefingTitle}>1. Hunt With Ghost Vision</h3>
           </div>
           <p className={styles.briefingText}>
-            Explore the cursed <strong>Midnight Checkout</strong> sandbox and
-            locate four accessibility barriers that prevent real users from
-            completing a purchase.
+            Explore the cursed <strong>Midnight Checkout</strong> using{' '}
+            <kbd>Tab</kbd>, or toggle <strong>Screen Reader X-Ray</strong> and{' '}
+            <strong>Focus &amp; Contrast</strong> lenses to uncover hidden
+            barriers.
           </p>
         </div>
 
         <div className={styles.briefingCard}>
           <div className={styles.briefingHeader}>
             <span className={styles.briefingIcon} aria-hidden="true">
-              ⌨️
+              <KeyboardKeyIcon size={20} />
             </span>
-            <h3 className={styles.briefingTitle}>2. Keyboard Challenge</h3>
+            <h3 className={styles.briefingTitle}>2. Pick the Right Patch</h3>
           </div>
           <p className={styles.briefingText}>
-            Test controls using <kbd>Tab</kbd>, <kbd>Shift</kbd>+<kbd>Tab</kbd>,{' '}
-            <kbd>Enter</kbd>, and <kbd>Space</kbd>. Apply real DOM &amp; CSS
-            patches in the <strong>Repair Studio</strong> and watch live
-            verification pass.
+            Choose from three candidate fixes in the{' '}
+            <strong>Repair Studio</strong>. Trap patches reveal why common
+            workarounds fail; true fixes mutate the live DOM and verify
+            instantly.
           </p>
         </div>
 
         <div className={styles.briefingCard}>
           <div className={styles.briefingHeader}>
             <span className={styles.briefingIcon} aria-hidden="true">
-              🛟
+              <LanternIcon size={20} />
             </span>
-            <h3 className={styles.briefingTitle}>3. Help &amp; Safe Exit</h3>
+            <h3 className={styles.briefingTitle}>3. Lantern Hints &amp; Safe Exit</h3>
           </div>
           <p className={styles.briefingText}>
-            Stuck on a curse? Use the <strong>3-level Hint System</strong> with
-            zero penalty. Press <kbd>Escape</kbd> or click{' '}
-            <strong>Exit</strong> at any time to leave the sandbox with your
-            progress saved.
+            Need a clue? The <strong>Plague Doctor Hint Keeper</strong> shines
+            3-level progressive hints with zero penalty. Press{' '}
+            <kbd>Escape</kbd> anytime to leave safely with progress saved.
           </p>
         </div>
       </section>
 
-      {/* The Four Curses Preview */}
+      {/* The Four Accessibility Curse Potions */}
       <section
         className={styles.cursesSection}
         aria-labelledby="curses-preview-heading"
       >
         <div className={styles.cursesHeader}>
           <h3 id="curses-preview-heading" className={styles.cursesHeading}>
-            Four Accessibility Curses to Break
+            Four Accessibility Curses to Banish
           </h3>
           <span className={styles.cursesSubtle}>
-            Verified via real browser DOM &amp; computed style checks
+            Verified via real browser DOM &amp; computed luminance checks
           </span>
         </div>
 
         <ul className={styles.cursesList} role="list">
-          {CURSE_PREVIEW.map((item) => (
-            <li key={item.code} className={styles.curseItem}>
-              <div className={styles.curseMeta}>
-                <span className={styles.wcagTag}>{item.code}</span>
-                <span className={styles.levelTag}>Level {item.level}</span>
+          {CURSE_CATALOG.map((item) => (
+            <li key={item.type} className={styles.curseItem}>
+              <div className={styles.curseTopRow}>
+                <span className={styles.potionThumb} aria-hidden="true">
+                  <img
+                    src={item.potionArtUrl}
+                    alt=""
+                    className={styles.potionImg}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </span>
+                <div className={styles.curseMeta}>
+                  <span className={styles.wcagTag}>{item.wcagCode}</span>
+                  <span className={styles.levelTag}>Level {item.wcagLevel}</span>
+                </div>
               </div>
-              <strong className={styles.curseTitle}>{item.title}</strong>
-              <span className={styles.curseSymptom}>{item.symptom}</span>
+              <strong className={styles.curseTitle}>{item.name}</strong>
+              <span className={styles.curseSymptom}>{item.curseAlias}</span>
             </li>
           ))}
         </ul>
@@ -209,17 +225,23 @@ export function MainMenuView() {
       {/* Accessibility & Containment Disclaimer */}
       <div className={styles.disclaimer}>
         <h3>
-          <span aria-hidden="true">⚠️</span> Accessibility Notice &amp; Sandbox
-          Containment
+          <ShieldNoticeIcon size={18} className={styles.disclaimerIcon} />
+          Accessibility Notice &amp; Sandbox Containment
         </h3>
         <p>
           This game contains intentional accessibility defects within a clearly
           marked sandbox for educational purposes. The surrounding game shell,
-          navigation, hint panel, and repair studio remain fully accessible
-          (WCAG 2.1 Level AA). Press <kbd>Escape</kbd> at any time to exit the
-          challenge.
+          navigation, costume locker, hint panel, and repair studio remain fully
+          accessible (WCAG 2.1 Level AA). Press <kbd>Escape</kbd> at any time to
+          exit the challenge.
         </p>
       </div>
+
+      <CostumeLockerModal
+        isOpen={lockerOpen}
+        onClose={() => setLockerOpen(false)}
+        returnFocusRef={costumeButtonRef}
+      />
     </div>
   );
 }

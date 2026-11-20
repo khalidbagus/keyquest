@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rive splash playback demo</title>
+    <style>
+      :root { color-scheme: dark; font: 1rem/1.5 system-ui, sans-serif; }
+      body { max-width: 52rem; margin: 3rem auto; padding: 0 1rem; }
+      .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+      button { font: inherit; padding: .35rem .8rem; }
+      .comparison { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1rem; }
+      figure { margin: 0; }
+      canvas { display: block; width: 100%; height: auto; background: #191e2b; border-radius: .5rem; }
+      figcaption { margin-top: .5rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Rive splash playback demo</h1>
+    <div class="controls">
+      <button id="replay" disabled>Replay</button>
+      <label>Open a local .riv file <input id="file" type="file" accept=".riv" disabled></label>
+    </div>
+    <p id="status" role="status">Loading Rive’s watermark test fixture…</p>
+    <div class="comparison">
+      <figure>
+        <canvas id="standard" width="400" height="300" aria-label="Default playback"></canvas>
+        <figcaption>Default playback</figcaption>
+      </figure>
+      <figure>
+        <canvas id="direct" width="400" height="300" aria-label="Playback with splash disabled"></canvas>
+        <figcaption>Splash disabled</figcaption>
+      </figure>
+    </div>
+    <script type="module" src="./demo.mjs"></script>
+  </body>
+</html>

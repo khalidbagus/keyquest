@@ -1,12 +1,19 @@
 /**
- * Completion View
- * Shown when all four defects are repaired and verified
+ * Completion View (v2 Sanctuary Unlocked Celebration Stage)
+ * Celebrates with the player's animated Rive companion performing its signature
+ * victory action, purified Curse Potion trophies, and Costume Locker showcase.
  * Requirements: 9.1, 9.2, 9.3, 9.4, 9.5
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { useMascot } from '../context/MascotContext';
+import { RiveMascot } from '../components/RiveMascot';
+import { CostumeLockerModal } from '../components/CostumeLocker';
+import { CostumeMaskIcon } from '../components/Icons/ApothecaryIcons';
 import { resetAllRepairs } from '../engines/RepairEngine';
+import { getCurseByType } from '../registry/patchRegistry';
+import type { DefectType } from '../types';
 import styles from './CompletionView.module.css';
 
 interface WcagSummaryDetail {
@@ -23,7 +30,7 @@ const WCAG_INFO: Record<string, WcagSummaryDetail> = {
     level: 'AA',
     name: 'Focus Visible',
     remedy:
-      'Restored :focus-visible outline (3px solid #60a5fa) with ≥ 3:1 contrast.',
+      'Restored :focus-visible outline (3px solid high-contrast indicator) with > 8:1 contrast.',
     impact:
       'Sighted keyboard users can always track which interactive control is active.',
   },
@@ -50,7 +57,7 @@ const WCAG_INFO: Record<string, WcagSummaryDetail> = {
     level: 'AA',
     name: 'Contrast (Minimum)',
     remedy:
-      'Updated price foreground color from #555555 (2.09:1) to #e0e0e0 (> 9.5:1).',
+      'Updated price foreground color from #555555 (~2.0:1) to #e0e0e0 (> 10:1).',
     impact:
       'People with low vision or color vision deficiencies can read pricing effortlessly.',
   },
@@ -58,7 +65,10 @@ const WCAG_INFO: Record<string, WcagSummaryDetail> = {
 
 export function CompletionView() {
   const { state, dispatch, progress } = useGame();
+  const { companion, companionSignal, triggerCompanion } = useMascot();
   const announceRef = useRef<HTMLDivElement>(null);
+  const costumeButtonRef = useRef<HTMLButtonElement>(null);
+  const [lockerOpen, setLockerOpen] = useState(false);
 
   const summary = state.phase === 'completion' ? state.summary : null;
 
@@ -78,6 +88,10 @@ export function CompletionView() {
   function handleReturnToMenu() {
     resetAllRepairs();
     dispatch({ type: 'RESET_CHALLENGE' });
+  }
+
+  function handleEncore() {
+    triggerCompanion('celebrate', companion.celebrationLine, 'celebrate');
   }
 
   function formatTime(ms: number): string {
@@ -105,41 +119,33 @@ export function CompletionView() {
 
       <div className={styles.card} data-testid="level-complete">
         <div className={styles.header}>
-          <div className={styles.crestWrapper} aria-hidden="true">
-            <svg
-              viewBox="0 0 88 88"
-              width="76"
-              height="76"
-              className={styles.crestSvg}
-              aria-hidden="true"
-              focusable="false"
-            >
-              <circle
-                cx="44"
-                cy="44"
-                r="40"
-                fill="#0f291e"
-                stroke="#4ade80"
-                strokeWidth="2.5"
-              />
-              <circle
-                cx="44"
-                cy="44"
-                r="33"
-                fill="none"
-                stroke="#fbbf24"
-                strokeWidth="1.5"
-                strokeDasharray="4 4"
-              />
-              <path
-                d="M28 45L39 56L61 33"
-                fill="none"
-                stroke="#4ade80"
-                strokeWidth="5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+          {/* Animated Companion Sanctuary Celebration Stage */}
+          <div className={styles.celebrationStageWrap}>
+            <RiveMascot
+              mascot={companion}
+              signal={companionSignal}
+              initialTrigger="celebrate"
+              variant="sanctuary"
+              size={240}
+            />
+            <div className={styles.stageControls}>
+              <button
+                type="button"
+                className={styles.stageActionBtn}
+                onClick={handleEncore}
+              >
+                Replay {companion.signatureAction}
+              </button>
+              <button
+                ref={costumeButtonRef}
+                type="button"
+                className={styles.stageActionBtn}
+                onClick={() => setLockerOpen(true)}
+              >
+                <CostumeMaskIcon size={15} />
+                <span>Try Another Ghost</span>
+              </button>
+            </div>
           </div>
 
           <span className={styles.escapeBadge}>
@@ -147,13 +153,13 @@ export function CompletionView() {
           </span>
           <h2 className={styles.title}>Challenge Complete!</h2>
           <p className={styles.subtitle}>
-            You&apos;ve escaped the Midnight Checkout! Every intentional defect
-            was repaired in the DOM and verified through live browser inspection.
-            Here&apos;s what you accomplished:
+            You and <strong>{companion.name}</strong> purified the Midnight
+            Checkout! Every intentional defect was repaired in the live DOM and
+            verified through real browser inspection.
           </p>
         </div>
 
-        {/* Repaired defects summary */}
+        {/* Repaired defects summary with Purified Curse Potion Trophies */}
         <div className={styles.summarySection}>
           <h3 className={styles.sectionTitle}>
             Verified Accessibility Repairs
@@ -161,6 +167,7 @@ export function CompletionView() {
           <ul className={styles.defectList} role="list">
             {summary.defectsRepaired.map((defectType) => {
               const info = WCAG_INFO[defectType];
+              const curse = getCurseByType(defectType as DefectType);
               const displayTitle = defectType
                 .split('-')
                 .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -168,8 +175,12 @@ export function CompletionView() {
 
               return (
                 <li key={defectType} className={styles.defectItem}>
-                  <span className={styles.defectCheck} aria-hidden="true">
-                    ✓
+                  <span className={styles.trophyPotion} aria-hidden="true">
+                    <img
+                      src={curse.potionArtUrl}
+                      alt=""
+                      className={styles.trophyPotionImg}
+                    />
                   </span>
                   <div className={styles.defectInfo}>
                     <div className={styles.defectHeaderRow}>
@@ -236,6 +247,12 @@ export function CompletionView() {
           </button>
         </div>
       </div>
+
+      <CostumeLockerModal
+        isOpen={lockerOpen}
+        onClose={() => setLockerOpen(false)}
+        returnFocusRef={costumeButtonRef}
+      />
     </div>
   );
 }

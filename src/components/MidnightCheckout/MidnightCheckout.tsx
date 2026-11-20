@@ -1,36 +1,116 @@
 /**
- * Midnight Checkout Component
- * The haunted apothecary checkout interface with four intentional defects
+ * Midnight Checkout Component (v2 Living Haunted Apothecary Storefront)
+ * Contains four intentional accessibility defects inside the isolated sandbox,
+ * Enchanted Candle cursed/purified artwork, Ghost Vision inspection callouts,
+ * and live mascot barrier reactions.
  * Requirements: 2.1, 2.3, 4.1, 5.1, 6.1, 7.1
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, type KeyboardEvent } from 'react';
+import { useGame } from '../../context/GameContext';
+import { useMascot } from '../../context/MascotContext';
+import { CartBagIcon } from '../Icons/ApothecaryIcons';
 import styles from './MidnightCheckout.module.css';
+
+export type GhostVisionMode = 'normal' | 'xray' | 'contrast';
 
 interface MidnightCheckoutProps {
   onDefectInteraction?: (defectType: string) => void;
+  visionMode?: GhostVisionMode;
 }
 
 export function MidnightCheckout({
   onDefectInteraction,
+  visionMode = 'normal',
 }: MidnightCheckoutProps) {
+  const { progress } = useGame();
+  const { triggerCompanion } = useMascot();
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
 
+  const defects = progress.defects;
+  const verifiedCount = Object.values(defects).filter((d) => d.verified).length;
+  const isPurified = verifiedCount >= 3;
+
   const handleAddToCart = useCallback(() => {
     setAddedToCart(true);
-    // Reset after a moment for demo purposes
     setTimeout(() => setAddedToCart(false), 2000);
   }, []);
 
-  const handleDefectFocus = useCallback(() => {
+  // Defect 2: Mouse-only focus discovery + keyboard trap mascot reaction
+  // NOTE: Never invokes click() when unrepaired so the intentional WCAG 2.1.1 barrier stays real!
+  const handleMouseOnlyFocus = useCallback(() => {
     onDefectInteraction?.('mouse-only-activation');
   }, [onDefectInteraction]);
+
+  const handleMouseOnlyKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      const target = event.currentTarget;
+      const isRepaired = target.dataset.keyquestRepaired === 'mouse-only';
+      if (!isRepaired && (event.key === 'Enter' || event.key === ' ')) {
+        onDefectInteraction?.('mouse-only-activation');
+        triggerCompanion(
+          'reactFailure',
+          'Blocked! The "Add to Cart" <div> completely ignored your keyboard key!',
+          'warning'
+        );
+      }
+    },
+    [onDefectInteraction, triggerCompanion]
+  );
+
+  // Defect 1: Invisible Focus mascot reaction on keyboard focus, discovery on activation
+  const handleBuyFocus = useCallback(() => {
+    if (!defects['invisible-focus'].verified) {
+      triggerCompanion(
+        'reactFailure',
+        'Spooky! "Buy Now" received focus, but outline: none hid your focus ring!',
+        'warning'
+      );
+    }
+  }, [defects, triggerCompanion]);
+
+  const handleBuyClick = useCallback(() => {
+    if (!defects['invisible-focus'].verified) {
+      onDefectInteraction?.('invisible-focus');
+      triggerCompanion(
+        'reactFailure',
+        'Caught it! Check "Buy Now" focus visibility — outline: none hides the ring!',
+        'warning'
+      );
+    }
+  }, [defects, onDefectInteraction, triggerCompanion]);
+
+  // Defect 3: Missing Accessible Name discovery on cart interaction before repair
+  const handleCartInspect = useCallback(() => {
+    if (!defects['missing-accessible-name'].verified) {
+      onDefectInteraction?.('missing-accessible-name');
+      triggerCompanion(
+        'reactFailure',
+        'Silent button! Screen readers only announce "button" with no name!',
+        'warning'
+      );
+    }
+  }, [defects, onDefectInteraction, triggerCompanion]);
+
+  // Defect 4: Low contrast discovery on price click/inspection before repair
+  const handlePriceInspect = useCallback(() => {
+    if (!defects['insufficient-contrast'].verified) {
+      onDefectInteraction?.('insufficient-contrast');
+      triggerCompanion(
+        'reactFailure',
+        'Hard to read! That $13.99 price only has ~2.0:1 contrast — below WCAG AA!',
+        'warning'
+      );
+    }
+  }, [defects, onDefectInteraction, triggerCompanion]);
 
   const subtotal = (quantity * 13.99).toFixed(2);
 
   return (
-    <div className={styles.checkout}>
+    <div
+      className={`${styles.checkout} ${isPurified ? styles.checkoutPurified : ''}`}
+    >
       {/* Storefront Header */}
       <div className={styles.storeHeader}>
         <div className={styles.storeBrand}>
@@ -44,98 +124,48 @@ export function MidnightCheckout({
          * Icon-only button with no aria-label, text, or title.
          * Violates WCAG 4.1.2 (Name, Role, Value).
          */}
-        <button
-          className={styles.cartIcon}
-          data-testid="defect-missing-name"
-          type="button"
-        >
-          <span aria-hidden="true">🛒</span>
-        </button>
+        <div className={styles.inspectAnchor}>
+          <button
+            className={styles.cartIcon}
+            data-testid="defect-missing-name"
+            type="button"
+            onClick={handleCartInspect}
+          >
+            <CartBagIcon size={20} className={styles.cartSvg} />
+          </button>
+
+          {visionMode === 'xray' && (
+            <span
+              className={`${styles.visionPill} ${
+                defects['missing-accessible-name'].verified
+                  ? styles.visionPillPass
+                  : styles.visionPillFail
+              }`}
+              aria-hidden="true"
+            >
+              {defects['missing-accessible-name'].verified
+                ? '✓ "View shopping cart"'
+                : '✕ name: "" (unnamed)'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Featured Artifact Card */}
       <div className={styles.product}>
-        {/* Bespoke Enchanted Candle SVG Illustration */}
-        <div className={styles.productImage} aria-hidden="true">
-          <svg
-            viewBox="0 0 120 120"
-            width="96"
-            height="96"
-            className={styles.candleSvg}
-            aria-hidden="true"
-            focusable="false"
-          >
-            {/* Ambient halo */}
-            <circle
-              cx="60"
-              cy="32"
-              r="22"
-              fill="#fbbf24"
-              fillOpacity="0.14"
-              className={styles.flameHalo}
-            />
-            {/* Outer flame */}
-            <path
-              d="M60 12C60 12 71 25 69 35C67.5 42.5 63.5 46 60 46C56.5 46 52.5 42.5 51 35C49 25 60 12 60 12Z"
-              fill="#fbbf24"
-              className={styles.flameOuter}
-            />
-            {/* Inner flame core */}
-            <path
-              d="M60 22C60 22 65 30 64 36C63.2 40 61.5 42 60 42C58.5 42 56.8 40 56 36C55 30 60 22 60 22Z"
-              fill="#fffbeb"
-            />
-            {/* Wick */}
-            <line
-              x1="60"
-              y1="45"
-              x2="60"
-              y2="50"
-              stroke="#eaeaea"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-            {/* Candle body */}
-            <rect
-              x="44"
-              y="50"
-              width="32"
-              height="44"
-              rx="4"
-              fill="#261c3a"
-              stroke="#a78bfa"
-              strokeWidth="1.5"
-            />
-            {/* Wax drips */}
-            <path
-              d="M44 54Q50 62 52 54T60 58T69 53T76 56"
-              fill="none"
-              stroke="#c4b5fd"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-            <path
-              d="M50 54V66M66 54V62"
-              stroke="#c4b5fd"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-            {/* Brass holder base */}
-            <path
-              d="M34 94H86L80 102H40L34 94Z"
-              fill="#b45309"
-              stroke="#fbbf24"
-              strokeWidth="1.5"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M82 94C89 94 92 88 89 83C86 79 81 82 81 86"
-              fill="none"
-              stroke="#fbbf24"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
+        {/* Illustrated Enchanted Candle Artifact (Cursed -> Purified) */}
+        <div
+          className={`${styles.productImage} ${
+            isPurified ? styles.productImagePurified : ''
+          }`}
+          aria-hidden="true"
+        >
+          <img
+            src={isPurified ? '/art/candle-purified.png' : '/art/candle-cursed.png'}
+            alt=""
+            className={styles.candleImg}
+            decoding="async"
+          />
         </div>
 
         {/* Product Info */}
@@ -151,18 +181,38 @@ export function MidnightCheckout({
             coding sessions and banishing shadowy UI bugs.
           </p>
 
-          <div className={styles.priceRow}>
+          <div className={styles.priceRow} onClick={handlePriceInspect}>
             <span className={styles.priceLabel}>Unit Price:</span>
             {/* DEFECT 4: Insufficient Contrast
-             * Color #555555 on #16213e surface has ~2.09:1 contrast ratio.
+             * Color #555555 on solid #231936 surface has ~2.0:1 contrast ratio.
              * Fails WCAG 1.4.3 (Contrast Minimum).
              */}
             <p
-              className={styles.productPrice}
+              className={`${styles.productPrice} ${
+                visionMode === 'contrast' &&
+                !defects['insufficient-contrast'].verified
+                  ? styles.contrastFlagged
+                  : ''
+              }`}
               data-testid="defect-low-contrast"
             >
               $13.99
             </p>
+
+            {visionMode === 'contrast' && (
+              <span
+                className={`${styles.visionInlinePill} ${
+                  defects['insufficient-contrast'].verified
+                    ? styles.visionPillPass
+                    : styles.visionPillFail
+                }`}
+                aria-hidden="true"
+              >
+                {defects['insufficient-contrast'].verified
+                  ? '✓ >10:1 AA Pass'
+                  : '✕ ~2.0:1 Fails AA'}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -181,7 +231,9 @@ export function MidnightCheckout({
             value={quantity}
             onChange={(e) => {
               const parsed = Number(e.target.value);
-              setQuantity(Number.isNaN(parsed) ? 1 : Math.max(1, Math.min(10, parsed)));
+              setQuantity(
+                Number.isNaN(parsed) ? 1 : Math.max(1, Math.min(10, parsed))
+              );
             }}
             className={styles.quantityInput}
           />
@@ -189,18 +241,36 @@ export function MidnightCheckout({
 
         {/* DEFECT 2: Mouse-Only Activation
          * This div acts like a button but ONLY responds to mouse clicks.
-         * It has tabindex="0" so it's focusable, but no keyboard handlers and no role="button".
+         * It has tabindex="0" so it's focusable, but no keyboard activation and no role="button".
          * Violates WCAG 2.1.1 (Keyboard).
          */}
-        <div
-          className={styles.addButton}
-          tabIndex={0}
-          onClick={handleAddToCart}
-          onFocus={handleDefectFocus}
-          data-testid="defect-mouse-only"
-          aria-label="Add to cart"
-        >
-          {addedToCart ? '✓ Added!' : 'Add to Cart'}
+        <div className={styles.inspectAnchor}>
+          <div
+            className={styles.addButton}
+            tabIndex={0}
+            onClick={handleAddToCart}
+            onFocus={handleMouseOnlyFocus}
+            onKeyDown={handleMouseOnlyKeyDown}
+            data-testid="defect-mouse-only"
+            aria-label="Add to cart"
+          >
+            {addedToCart ? '✓ Added!' : 'Add to Cart'}
+          </div>
+
+          {visionMode === 'xray' && (
+            <span
+              className={`${styles.visionPill} ${
+                defects['mouse-only-activation'].verified
+                  ? styles.visionPillPass
+                  : styles.visionPillFail
+              }`}
+              aria-hidden="true"
+            >
+              {defects['mouse-only-activation'].verified
+                ? '✓ role="button" + Keys'
+                : '✕ generic <div> (no keys)'}
+            </span>
+          )}
         </div>
       </div>
 
@@ -211,7 +281,9 @@ export function MidnightCheckout({
           <span className={styles.ledgerFree}>FREE</span>
         </div>
         <div className={styles.ledgerRowTotal}>
-          <span>Order Total ({quantity} {quantity === 1 ? 'item' : 'items'})</span>
+          <span>
+            Order Total ({quantity} {quantity === 1 ? 'item' : 'items'})
+          </span>
           <span>${subtotal}</span>
         </div>
       </div>
@@ -220,13 +292,32 @@ export function MidnightCheckout({
        * Focus indicator is removed via outline: none with no replacement.
        * Violates WCAG 2.4.7 (Focus Visible).
        */}
-      <button
-        className={styles.buyButton}
-        data-testid="defect-invisible-focus"
-        type="button"
-      >
-        Buy Now
-      </button>
+      <div className={styles.buyWrapper}>
+        <button
+          className={styles.buyButton}
+          data-testid="defect-invisible-focus"
+          type="button"
+          onFocus={handleBuyFocus}
+          onClick={handleBuyClick}
+        >
+          Buy Now
+        </button>
+
+        {visionMode === 'contrast' && (
+          <span
+            className={`${styles.visionInlinePill} ${
+              defects['invisible-focus'].verified
+                ? styles.visionPillPass
+                : styles.visionPillFail
+            }`}
+            aria-hidden="true"
+          >
+            {defects['invisible-focus'].verified
+              ? '✓ 3px :focus-visible active'
+              : '✕ outline: none (focus hidden)'}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

@@ -65,7 +65,7 @@ export const HINT_REGISTRY: readonly HintDefinition[] = [
   {
     defectType: 'invisible-focus',
     level: 3,
-    text: 'The "Buy Now" button has no visible focus indicator. The repair restores a :focus-visible outline (3px solid #60a5fa) so sighted keyboard users can always see which control is active — WCAG 2.4.7 Focus Visible.',
+    text: 'The "Buy Now" button has no visible focus indicator. The repair restores a high-contrast :focus-visible outline (3px solid) so sighted keyboard users can always see which control is active — WCAG 2.4.7 Focus Visible.',
   },
 
   // ============================================
@@ -93,12 +93,12 @@ export const HINT_REGISTRY: readonly HintDefinition[] = [
   {
     defectType: 'missing-accessible-name',
     level: 1,
-    text: 'Screen readers announce every control by name. Move through the shop control by control and listen — one button announces nothing at all.',
+    text: 'Screen readers announce every control by name. Move through the shop control by control (or switch on Screen Reader X-Ray) — one button announces nothing at all.',
   },
   {
     defectType: 'missing-accessible-name',
     level: 2,
-    text: 'The shopping cart icon button contains only an SVG image, with no text and no aria-label, so screen readers read it as an unnamed button.',
+    text: 'The shopping cart icon button contains only an icon, with no visible text and no aria-label, so screen readers read it as an unnamed button.',
   },
   {
     defectType: 'missing-accessible-name',
@@ -112,17 +112,17 @@ export const HINT_REGISTRY: readonly HintDefinition[] = [
   {
     defectType: 'insufficient-contrast',
     level: 1,
-    text: 'Read the checkout carefully by eye. One important piece of information is unusually faint and hard to make out against its background.',
+    text: 'Read the checkout carefully by eye (or toggle the Focus & Contrast Scanner). One important piece of information is unusually faint and hard to make out against its dark counter.',
   },
   {
     defectType: 'insufficient-contrast',
     level: 2,
-    text: 'The price text is displayed in light gray (#999999) on a white background — a contrast ratio of about 2.85:1, below the 4.5:1 minimum for normal text.',
+    text: 'The "$13.99" price text is displayed in dim gray (#555555) on the dark plum counter (#231936) — roughly 2.0:1 contrast, well below the WCAG AA minimum.',
   },
   {
     defectType: 'insufficient-contrast',
     level: 3,
-    text: 'The repair raises the price text color to #595959, reaching roughly 7:1 contrast so users with low vision can read it — WCAG 1.4.3 Contrast (Minimum).',
+    text: 'The repair raises the price text foreground color to crisp light #e0e0e0, exceeding 10:1 contrast so people with low vision can read pricing effortlessly — WCAG 1.4.3 Contrast (Minimum).',
   },
 ];
 
@@ -155,10 +155,6 @@ export function getHint(
  * Deterministically pick the defect a new hint should target:
  * the first defect in canonical order that is not yet verified.
  * Returns null when every defect is verified (nothing left to hint).
- *
- * The target does not depend on hintLevel, so repeated requests
- * advance the same defect from level 1 to 3 and then keep returning
- * its level-3 hint (Property 6: Hint Progression).
  */
 export function selectHintTarget(
   defects: Record<DefectType, DefectState>
@@ -168,8 +164,7 @@ export function selectHintTarget(
 
 /**
  * Contextual status line describing where the player stands with a
- * defect (undiscovered vs discovered vs repair attempted). Shown
- * alongside the hint text so hints adapt to current progress.
+ * defect (undiscovered vs discovered vs repair attempted).
  */
 export function getHintStatusContext(state: DefectState): string {
   if (state.verified) {
@@ -179,7 +174,7 @@ export function getHintStatusContext(state: DefectState): string {
     return 'A repair has been applied — check its verification status in the Repair Studio.';
   }
   if (state.discovered) {
-    return 'You have discovered this defect. Apply its repair from the Repair Studio when you are ready.';
+    return 'You have discovered this defect. Pick the right accessibility patch in the Repair Studio when you are ready.';
   }
   return 'This defect has not been discovered yet — explore the Midnight Checkout, or reveal it with the Discover Defect button in the Repair Studio.';
 }

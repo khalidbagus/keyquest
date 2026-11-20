@@ -1,0 +1,19 @@
+{
+  "name": "@keyquest/rive-canvas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A self-hosted Rive Web Canvas Advanced Lite runtime",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.mts",
+      "import": "./index.mjs"
+    }
+  },
+  "files": [
+    "index.mjs",
+    "index.d.mts",
+    "runtime/",
+    "AGENTS.md"
+  ]
+}

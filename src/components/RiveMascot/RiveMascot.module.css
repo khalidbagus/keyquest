@@ -1,0 +1,100 @@
+/**
+ * RiveMascot Stage Styles
+ * Lit lavender / sanctuary backdrops keep dark-outlined ghosts crisp and legible.
+ */
+
+.stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* Compact lit medallion for HUD & Hint Keeper */
+.stageMedallion {
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 42%,
+    #f6effd 0%,
+    #e5d6f5 62%,
+    #cbb5e8 100%
+  );
+  border: 2px solid var(--surface-stage-border);
+  box-shadow: 0 4px 16px rgba(10, 5, 20, 0.5),
+    inset 0 0 12px rgba(255, 255, 255, 0.45);
+  padding: 6px;
+}
+
+/* Full moonlit apothecary arched stage for Main Menu Hero */
+.stageHero {
+  width: 100%;
+  max-width: 340px;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--border-radius-lg);
+  border: 2px solid var(--color-border-strong);
+  background-color: #241638;
+  background-image: radial-gradient(
+      circle at 50% 52%,
+      rgba(236, 224, 247, 0.72) 0%,
+      rgba(216, 196, 240, 0.25) 38%,
+      rgba(24, 17, 36, 0.55) 78%
+    ),
+    url('/art/stage-moonlit.jpg');
+  background-size: cover;
+  background-position: center;
+  box-shadow: var(--shadow-lg), inset 0 0 28px rgba(17, 12, 27, 0.55);
+  padding: 12px;
+}
+
+/* Warm golden sanctuary stage for Completion View */
+.stageSanctuary {
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--border-radius-lg);
+  border: 2px solid var(--color-warning);
+  background-color: #2a1d3a;
+  background-image: radial-gradient(
+      circle at 50% 52%,
+      rgba(254, 243, 199, 0.65) 0%,
+      rgba(232, 212, 248, 0.22) 45%,
+      rgba(24, 17, 36, 0.48) 85%
+    ),
+    url('/art/stage-sanctuary.jpg');
+  background-size: cover;
+  background-position: center;
+  box-shadow: var(--shadow-lg), 0 0 32px rgba(251, 191, 36, 0.22);
+  padding: 12px;
+}
+
+.poster,
+.canvas {
+  position: absolute;
+  inset: 6%;
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+  display: block;
+}
+
+.poster {
+  opacity: 1;
+  transition: opacity var(--transition-fast);
+  pointer-events: none;
+}
+
+.posterHidden {
+  opacity: 0;
+}
+
+.canvas {
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.canvasVisible {
+  opacity: 1;
+}

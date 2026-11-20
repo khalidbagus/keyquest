@@ -1,0 +1,193 @@
+/**
+ * Costume Locker Modal Styles
+ */
+
+.dialog {
+  padding: 0;
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--border-radius-lg);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  width: min(94vw, 820px);
+  max-height: 88vh;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.dialog:modal {
+  overscroll-behavior: contain;
+}
+
+.dialog::backdrop {
+  background-color: rgba(11, 7, 19, 0.78);
+  backdrop-filter: blur(4px);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.content {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-4);
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-xl);
+  color: var(--color-text);
+}
+
+.titleIcon {
+  color: var(--color-warning);
+  flex-shrink: 0;
+}
+
+.description {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.closeButton {
+  background-color: var(--color-bg-deep);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  padding: var(--space-2) var(--space-4);
+  min-height: var(--min-touch-target);
+  flex-shrink: 0;
+}
+
+.closeButton:hover {
+  background-color: var(--color-surface-elevated);
+  border-color: var(--color-text-muted);
+}
+
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-3);
+}
+
+.gridItem {
+  display: flex;
+}
+
+.card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  text-align: left;
+  background-color: var(--color-bg-deep);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  min-height: 76px;
+}
+
+.card:hover {
+  background-color: var(--color-surface-elevated);
+  border-color: var(--color-warning);
+}
+
+.cardSelected {
+  background-color: var(--color-surface-elevated);
+  border: 2px solid var(--color-warning);
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.25);
+}
+
+.avatarStage {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 42%, #f6effd 0%, #dfccef 100%);
+  border: 1.5px solid var(--surface-stage-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 4px;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.cardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.cardName {
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.equippedBadge {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #181124;
+  background-color: var(--color-warning);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.cardAction {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.35;
+}
+
+@media (max-width: 560px) {
+  .content {
+    padding: var(--space-4);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

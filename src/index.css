@@ -1,6 +1,6 @@
 /**
- * KeyQuest: The Haunted Accessibility Lab
- * Global styles and design system tokens
+ * KeyQuest: The Haunted Accessibility Lab (v2 Twilight-Plum Apothecary Theme)
+ * Global styles and WCAG 2.1 AA verified design system tokens
  */
 
 /* ============================================
@@ -10,27 +10,40 @@
 :root {
   color-scheme: dark;
 
-  /* Colors - Core Palette (WCAG AA verified) */
-  --color-bg: #1a1a2e;
-  --color-bg-deep: #0f1123;
-  --color-surface: #16213e;
-  --color-surface-elevated: #1d2b4f;
-  --color-surface-card: #12192e;
-  --color-primary: #c93050; /* 4.7:1 contrast with #ffffff */
-  --color-primary-hover: #a82844;
-  --color-secondary: #0f3460;
-  --color-border: #284275;
-  --color-border-subtle: rgba(234, 234, 234, 0.14);
-  --color-text: #eaeaea;
-  --color-text-muted: #b0b8c8; /* 7.8:1 against #1a1a2e, 7.1:1 against #16213e */
+  /* Twilight-Plum Apothecary Palette (WCAG AA verified) */
+  --color-bg: #181124;
+  --color-bg-deep: #110c1b;
+  --color-surface: #231936; /* Solid surface for deterministic axe contrast */
+  --color-surface-elevated: #2e2147;
+  --color-surface-card: #1b132b;
+  --color-primary: #c93050; /* 4.7:1+ contrast with #ffffff */
+  --color-primary-hover: #ad2442;
+  --color-secondary: #322252;
+  --color-secondary-hover: #412d6a;
+  --color-border: #4b386e;
+  --color-border-strong: #684f96;
+  --color-border-subtle: rgba(247, 240, 252, 0.14);
+
+  /* Text */
+  --color-text: #f7f0fc; /* > 14:1 on #231936 */
+  --color-text-muted: #c8badf; /* > 7.4:1 on #231936, > 8.7:1 on #181124 */
+
+  /* Semantic Accents */
   --color-success: #4ade80;
   --color-warning: #fbbf24;
+  --color-warning-soft: #fde68a;
   --color-error: #dc2626; /* 4.8:1 contrast with #ffffff */
-  --color-accent-purple: #c4b5fd;
+  --color-accent-purple: #d8b4fe;
+  --color-accent-cyan: #7dd3fc;
 
-  /* Focus indicators contrast against the app's dark surfaces */
-  --color-focus: #60a5fa;
-  --color-focus-ring-outer: #60a5fa;
+  /* Lit Mascot Stage Backdrop (High contrast for dark-ink silhouettes) */
+  --surface-stage-bg: #ece0f7;
+  --surface-stage-border: #d8c4f0;
+  --surface-stage-ink: #241133;
+
+  /* Focus indicators (high contrast >= 8:1 against dark plum surfaces) */
+  --color-focus: #7dd3fc;
+  --color-focus-ring-outer: #7dd3fc;
   --focus-outline-width: 3px;
   --focus-outline-offset: 2px;
 
@@ -45,6 +58,8 @@
   --space-10: 40px;
 
   /* Typography */
+  --font-display: 'Fredoka', 'Trebuchet MS', 'Segoe UI', -apple-system,
+    BlinkMacSystemFont, sans-serif;
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
     Ubuntu, sans-serif;
   --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas,
@@ -59,16 +74,16 @@
   --line-height-heading: 1.2;
 
   /* Layout */
-  --max-content-width: 1200px;
+  --max-content-width: 1240px;
   --min-touch-target: 44px;
-  --border-radius-sm: 4px;
-  --border-radius-md: 8px;
-  --border-radius-lg: 12px;
+  --border-radius-sm: 6px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 18px;
 
   /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.28);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.38);
-  --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 2px 10px rgba(9, 5, 18, 0.38);
+  --shadow-md: 0 10px 28px rgba(9, 5, 18, 0.48);
+  --shadow-lg: 0 16px 42px rgba(9, 5, 18, 0.62);
 
   /* Transitions (kept <= 200ms per design system) */
   --transition-fast: 150ms ease;
@@ -99,14 +114,19 @@ body {
   color: var(--color-text);
   background-color: var(--color-bg);
   background-image: radial-gradient(
-      circle at 15% 10%,
-      rgba(201, 48, 80, 0.08) 0%,
-      transparent 45%
+      circle at 12% 8%,
+      rgba(251, 191, 36, 0.08) 0%,
+      transparent 40%
     ),
     radial-gradient(
-      circle at 85% 85%,
-      rgba(15, 52, 96, 0.35) 0%,
-      transparent 55%
+      circle at 86% 14%,
+      rgba(168, 85, 247, 0.14) 0%,
+      transparent 44%
+    ),
+    radial-gradient(
+      circle at 50% 95%,
+      rgba(201, 48, 80, 0.08) 0%,
+      transparent 52%
     );
   min-height: 100vh;
   min-height: 100dvh;
@@ -132,13 +152,17 @@ h5,
 h6 {
   margin: 0 0 var(--space-4);
   line-height: var(--line-height-heading);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+h1,
+h2 {
+  font-family: var(--font-display);
 }
 
 h1 {
   font-size: var(--font-size-2xl);
-  font-weight: 700;
 }
 
 h2 {
@@ -208,7 +232,7 @@ button:disabled {
 
 .skip-link {
   position: absolute;
-  top: -100px;
+  top: var(--space-4);
   left: var(--space-4);
   z-index: 9999;
   padding: var(--space-2) var(--space-4);
@@ -221,8 +245,16 @@ button:disabled {
   box-shadow: var(--shadow-md);
 }
 
+.skip-link:not(:focus) {
+  clip-path: inset(50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
 .skip-link:focus {
-  top: var(--space-4);
+  clip-path: none;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* ============================================

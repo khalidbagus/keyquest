@@ -6,13 +6,13 @@
 
 import { useEffect, useCallback } from 'react';
 import { useGame } from '../../context/GameContext';
+import { ExitPortalIcon } from '../Icons/ApothecaryIcons';
 import styles from './EmergencyExitButton.module.css';
 
 export function EmergencyExitButton() {
   const { dispatch, saveProgress } = useGame();
 
   const handleExit = useCallback(() => {
-    // Save progress before exiting
     saveProgress();
     dispatch({ type: 'EMERGENCY_EXIT' });
   }, [dispatch, saveProgress]);
@@ -22,7 +22,6 @@ export function EmergencyExitButton() {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         // Don't intercept Escape if a modal dialog is open
-        // Native dialogs handle Escape themselves
         const openDialog = document.querySelector('dialog[open]');
         if (openDialog) {
           return;
@@ -45,7 +44,7 @@ export function EmergencyExitButton() {
       data-testid="emergency-exit"
       aria-label="Exit challenge and return to menu (Escape key)"
     >
-      <span aria-hidden="true">🚪</span>
+      <ExitPortalIcon size={17} />
       Exit
     </button>
   );
