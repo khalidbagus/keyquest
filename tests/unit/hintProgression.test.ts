@@ -146,7 +146,7 @@ describe('hint progression via gameReducer', () => {
       }
     }
     expect(
-      Object.values(state.progress.defects).every((d) => d.hintLevel === 3)
+      DEFECT_ORDER.every((t) => state.progress.defects[t].hintLevel === 3)
     ).toBe(true);
 
     state = gameReducer(state, { type: 'RESET_CHALLENGE' });

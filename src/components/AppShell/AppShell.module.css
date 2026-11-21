@@ -123,3 +123,8 @@
     padding-block: var(--space-3);
   }
 }
+@media (max-width: 640px) {
+  .main {
+    padding: var(--space-3);
+  }
+}

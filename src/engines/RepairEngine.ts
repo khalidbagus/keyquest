@@ -158,6 +158,25 @@ export function repairInsufficientContrast(element: HTMLElement): RepairResult {
 }
 
 /**
+ * Applies the repair for Color-Only Ingredients (Potion Pantry shelf).
+ * Reveals each jar's symbol and name via a class on the shelf container, so
+ * the visible name becomes the button text and accessible name.
+ */
+export function repairColorOnlyIngredients(element: HTMLElement): RepairResult {
+  const domChanges: string[] = [];
+  element.classList.add('keyquest-labels-repaired');
+  domChanges.push('Added class "keyquest-labels-repaired" to the shelf');
+  element.dataset.keyquestRepaired = 'color-only';
+  return {
+    success: true,
+    defectType: 'color-only-ingredients',
+    message:
+      'Repair applied: every jar now shows a symbol and its name. Color is no longer the only cue (WCAG 1.4.1), and each button is named by its visible text (WCAG 4.1.2, 2.5.3).',
+    domChanges,
+  };
+}
+
+/**
  * Main repair function - dispatches to specific repair based on defect type.
  */
 export function applyRepair(
@@ -173,6 +192,8 @@ export function applyRepair(
       return repairMissingAccessibleName(element);
     case 'insufficient-contrast':
       return repairInsufficientContrast(element);
+    case 'color-only-ingredients':
+      return repairColorOnlyIngredients(element);
     default:
       return {
         success: false,
@@ -225,6 +246,11 @@ export function resetRepair(defectType: DefectType, element: HTMLElement): void 
       }
       delete element.dataset.keyquestRepaired;
       break;
+
+    case 'color-only-ingredients':
+      element.classList.remove('keyquest-labels-repaired');
+      delete element.dataset.keyquestRepaired;
+      break;
   }
 }
 
@@ -238,6 +264,7 @@ export function resetAllRepairs(): void {
     'mouse-only-activation': '[data-testid="defect-mouse-only"]',
     'missing-accessible-name': '[data-testid="defect-missing-name"]',
     'insufficient-contrast': '[data-testid="defect-low-contrast"]',
+    'color-only-ingredients': '[data-testid="defect-color-only"]',
   };
 
   for (const [defectType, selector] of Object.entries(defectSelectors)) {

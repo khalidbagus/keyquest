@@ -1,60 +1,43 @@
 /**
  * Challenge Sandbox Component
- * Isolated container with intentional accessibility defects and Ghost Vision Gadget Toolbar.
+ * Isolated container with intentional accessibility defects and the compact
+ * Ghost Vision gadget row (accessible app shell, above the sandbox boundary).
+ * Each room supplies its own lenses and renders its scene as children.
  * Requirements: 2.1, 2.2, 2.4, 2.5
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useGame } from '../../context/GameContext';
-import {
-  MidnightCheckout,
-  type GhostVisionMode,
-} from '../MidnightCheckout/MidnightCheckout';
+import type { GhostVisionMode } from '../MidnightCheckout/MidnightCheckout';
 import {
   ContrastScanIcon,
   GhostVisionEyeIcon,
   ScreenReaderWaveIcon,
   ShieldNoticeIcon,
 } from '../Icons/ApothecaryIcons';
+import type { DefectType } from '../../types';
+import { CHECKOUT_VISION_MODES, type VisionModeDefinition } from './visionModes';
 import styles from './ChallengeSandbox.module.css';
 
 interface ChallengeSandboxProps {
-  onDefectInteraction?: (defectType: string) => void;
+  /** Curses in this room, for the containment badge. */
+  curseTypes: readonly DefectType[];
+  visionModes?: readonly VisionModeDefinition[];
+  children: (visionMode: GhostVisionMode) => ReactNode;
 }
 
-const VISION_MODES: readonly {
-  id: GhostVisionMode;
-  label: string;
-  hint: string;
-}[] = [
-  {
-    id: 'normal',
-    label: 'Normal',
-    hint: 'Explore with Tab, Enter, Space, and mouse to experience real accessibility barriers.',
-  },
-  {
-    id: 'xray',
-    label: 'Screen Reader X-Ray',
-    hint: 'Exposes what assistive technology actually hears for each control in the Accessibility Tree.',
-  },
-  {
-    id: 'contrast',
-    label: 'Focus & Contrast',
-    hint: 'Reveals live luminance contrast ratios and highlights suppressed focus rings.',
-  },
-];
-
 export function ChallengeSandbox({
-  onDefectInteraction,
+  curseTypes,
+  visionModes = CHECKOUT_VISION_MODES,
+  children,
 }: ChallengeSandboxProps) {
   const announcerRef = useRef<HTMLDivElement>(null);
+  const modeRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const { progress } = useGame();
   const [visionMode, setVisionMode] = useState<GhostVisionMode>('normal');
 
-  const verifiedCount = Object.values(progress.defects).filter(
-    (d) => d.verified
-  ).length;
-  const remainingCurses = 4 - verifiedCount;
+  const verifiedCount = curseTypes.filter((t) => progress.defects[t].verified).length;
+  const remainingCurses = curseTypes.length - verifiedCount;
   const allRepaired = remainingCurses === 0;
 
   // Announce sandbox entry to screen readers
@@ -73,50 +56,76 @@ export function ChallengeSandbox({
     return () => clearTimeout(timeoutId);
   }, []);
 
+  // Radio group keyboard pattern: one Tab stop, arrow keys move and select.
+  function handleModeKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const keys = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End'];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+    const last = visionModes.length - 1;
+    let next = index;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = index === last ? 0 : index + 1;
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = index === 0 ? last : index - 1;
+    if (event.key === 'Home') next = 0;
+    if (event.key === 'End') next = last;
+    setVisionMode(visionModes[next]!.id);
+    modeRefs.current[next]?.focus();
+  }
+
   const activeVision =
-    VISION_MODES.find((mode) => mode.id === visionMode) ?? VISION_MODES[0]!;
+    visionModes.find((mode) => mode.id === visionMode) ?? visionModes[0]!;
 
   return (
     <div className={styles.wrapper}>
-      {/* Ghost Vision Gadget Toolbar (Lives in the accessible app shell above the sandbox!) */}
+      {/* Ghost Vision gadget row (accessible app shell, above the sandbox) */}
       <div
         className={styles.gadgetBar}
         role="region"
         aria-label="Ghost Vision inspection gadgets"
         data-testid="ghost-vision-toolbar"
       >
-        <div className={styles.gadgetHeader}>
-          <span className={styles.gadgetLabel}>
-            <GhostVisionEyeIcon size={17} className={styles.gadgetIcon} />
-            Ghost Vision
-          </span>
+        <span className={styles.gadgetLabel} id="ghost-vision-label">
+          <GhostVisionEyeIcon size={17} className={styles.gadgetIcon} />
+          Ghost Vision
+        </span>
 
-          <div
-            className={styles.modeGroup}
-            role="radiogroup"
-            aria-label="Ghost Vision inspection mode"
-          >
-            {VISION_MODES.map((mode) => {
-              const checked = visionMode === mode.id;
-              return (
-                <button
-                  key={mode.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={checked}
-                  className={`${styles.modeButton} ${checked ? styles.modeButtonActive : ''}`}
-                  onClick={() => setVisionMode(mode.id)}
-                  data-testid={`vision-mode-${mode.id}`}
-                >
-                  {mode.id === 'xray' && <ScreenReaderWaveIcon size={14} />}
-                  {mode.id === 'contrast' && <ContrastScanIcon size={14} />}
-                  <span>{mode.label}</span>
-                </button>
-              );
-            })}
-          </div>
+        <div
+          className={styles.modeGroup}
+          role="radiogroup"
+          aria-labelledby="ghost-vision-label"
+          aria-describedby="ghost-vision-hint"
+        >
+          {visionModes.map((mode, index) => {
+            const checked = visionMode === mode.id;
+            return (
+              <button
+                key={mode.id}
+                ref={(el) => {
+                  modeRefs.current[index] = el;
+                }}
+                type="button"
+                role="radio"
+                aria-checked={checked}
+                tabIndex={checked ? 0 : -1}
+                className={`${styles.modeButton} ${checked ? styles.modeButtonActive : ''}`}
+                onClick={() => setVisionMode(mode.id)}
+                onKeyDown={(event) => handleModeKeyDown(event, index)}
+                data-testid={`vision-mode-${mode.id}`}
+              >
+                {mode.id === 'xray' && <ScreenReaderWaveIcon size={14} />}
+                {(mode.id === 'contrast' || mode.id === 'grayscale') && (
+                  <ContrastScanIcon size={14} />
+                )}
+                <span>{mode.label}</span>
+              </button>
+            );
+          })}
         </div>
-        <p className={styles.gadgetHint}>{activeVision.hint}</p>
+        <p
+          className={`${styles.gadgetHint} ${visionMode === 'normal' ? styles.gadgetHintNormal : ''}`}
+          id="ghost-vision-hint"
+        >
+          {activeVision.hint}
+        </p>
       </div>
 
       {/* Isolated Challenge Sandbox */}
@@ -134,38 +143,28 @@ export function ChallengeSandbox({
           className="visually-hidden"
         />
 
-        {/* Sandbox Containment Header */}
-        <div className={styles.containmentBar} aria-hidden="true">
-          <span className={styles.containmentTag}>
-            ISOLATED CHALLENGE SANDBOX
+        {/* Sandbox containment header and visible disclaimer */}
+        <div className={styles.containmentBar}>
+          <span className={styles.disclaimer}>
+            <ShieldNoticeIcon size={16} className={styles.disclaimerIcon} />
+            <span>
+              This area contains intentional accessibility defects for
+              educational purposes.
+            </span>
           </span>
           <span
             className={
               allRepaired ? styles.curseBadgeCleared : styles.curseBadgeActive
             }
+            aria-hidden="true"
           >
             {allRepaired
-              ? '✓ All 4 Curses Lifted'
-              : `${remainingCurses} Accessibility ${
-                  remainingCurses === 1 ? 'Curse' : 'Curses'
-                } Active`}
+              ? `✓ ${curseTypes.length === 1 ? 'Curse' : `All ${curseTypes.length} curses`} lifted`
+              : `${remainingCurses} ${remainingCurses === 1 ? 'curse' : 'curses'} active`}
           </span>
         </div>
 
-        {/* Visible disclaimer */}
-        <div className={styles.disclaimer}>
-          <ShieldNoticeIcon size={16} className={styles.disclaimerIcon} />
-          <span>
-            This area contains intentional accessibility defects for educational
-            purposes.
-          </span>
-        </div>
-
-        {/* The defective checkout UI */}
-        <MidnightCheckout
-          onDefectInteraction={onDefectInteraction}
-          visionMode={visionMode}
-        />
+        {children(visionMode)}
       </div>
     </div>
   );

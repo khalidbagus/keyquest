@@ -1,7 +1,7 @@
 /**
- * Hint Panel Component (Plague Doctor Hint Keeper Booth)
- * Progressive 3-level hint request button, Plague Doctor Rive Lantern Search,
- * and contextual hint display.
+ * Hint Panel Component (compact room hint)
+ * Reveals one clue at a time (three per curse) for the first unverified
+ * curse in canonical order. Hints never change repair progress.
  * Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6
  */
 
@@ -16,32 +16,34 @@ import {
   getHintStatusContext,
   selectHintTarget,
 } from '../../registry/hintRegistry';
-import { RiveMascot } from '../RiveMascot';
 import { LanternIcon } from '../Icons/ApothecaryIcons';
 import styles from './HintPanel.module.css';
 
-export function HintPanel() {
-  const { progress, dispatch } = useGame();
-  const { hintKeeper, hintKeeperSignal, triggerHintKeeper } = useMascot();
+import type { DefectType } from '../../types';
 
-  // Deterministic target: first defect in canonical order not yet verified
-  const target = selectHintTarget(progress.defects);
+interface HintPanelProps {
+  /** Curses in this room, in the order hints target them. */
+  order?: readonly DefectType[];
+}
+
+export function HintPanel({ order }: HintPanelProps) {
+  const { progress, dispatch } = useGame();
+  const { triggerHintKeeper } = useMascot();
+
+  const target = selectHintTarget(progress.defects, order);
   const targetState = target ? progress.defects[target] : null;
   const hintLevel: 1 | 2 | 3 | null =
     targetState && targetState.hintLevel !== 0 ? targetState.hintLevel : null;
   const activeHint = target && hintLevel ? getHint(target, hintLevel) : null;
+  const atLastClue = hintLevel === HINT_MAX_LEVEL;
 
   const handleRequestHint = useCallback(() => {
-    const hintTarget = selectHintTarget(progress.defects);
+    const hintTarget = selectHintTarget(progress.defects, order);
     if (hintTarget) {
       dispatch({ type: 'REQUEST_HINT', defectType: hintTarget });
-      // Plague Doctor Ghost plays Lantern Search on requestAttention!
-      triggerHintKeeper(
-        'requestAttention',
-        `Lantern Search illuminates ${DEFECT_LABELS[hintTarget]}!`
-      );
+      triggerHintKeeper('requestAttention');
     }
-  }, [progress.defects, dispatch, triggerHintKeeper]);
+  }, [progress.defects, order, dispatch, triggerHintKeeper]);
 
   return (
     <section
@@ -49,87 +51,53 @@ export function HintPanel() {
       aria-labelledby="hint-panel-title"
       data-testid="hint-panel"
     >
-      <div className={styles.boothTop}>
-        <div className={styles.keeperMedallion}>
-          <RiveMascot
-            mascot={hintKeeper}
-            signal={hintKeeperSignal}
-            variant="medallion"
-            size={64}
-          />
-        </div>
+      <div className={styles.headerRow}>
+        <h3 id="hint-panel-title" className={styles.title}>
+          <LanternIcon size={17} className={styles.lanternIcon} />
+          Hint
+        </h3>
+        {/* Stays mounted so focus is never dropped when the last curse lifts. */}
+        <button
+          type="button"
+          className={styles.hintButton}
+          onClick={handleRequestHint}
+          disabled={!target}
+          data-testid="hint-button"
+        >
+          {!target
+            ? 'No clues needed'
+            : !hintLevel
+              ? 'Show a clue'
+              : atLastClue
+                ? 'Show the last clue again'
+                : 'Next clue'}
+        </button>
+      </div>
 
-        <div className={styles.headerCol}>
-          <div className={styles.headerRow}>
-            <div className={styles.titleCluster}>
-              <h3 id="hint-panel-title" className={styles.title}>
-                <LanternIcon size={17} className={styles.lanternIcon} />
-                Hint Keeper
-              </h3>
-              {target && (
-                <div className={styles.levelPips} aria-hidden="true">
-                  {[1, 2, 3].map((lvl) => (
-                    <span
-                      key={lvl}
-                      className={
-                        hintLevel && lvl <= hintLevel
-                          ? styles.pipActive
-                          : styles.pipInactive
-                      }
-                    >
-                      L{lvl}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <button
-              type="button"
-              className={styles.hintButton}
-              onClick={handleRequestHint}
-              data-testid="hint-button"
-            >
-              Get Hint
-            </button>
+      {/* Polite live region: one announcement per clue */}
+      <div className={styles.display} role="status" data-testid="hint-display">
+        {!target && (
+          <p className={styles.placeholder}>
+            Every curse in this room is lifted. No clues needed.
+          </p>
+        )}
+        {target && !hintLevel && (
+          <p className={styles.placeholder}>
+            No hint requested yet. Clues are free and appear one at a time.
+          </p>
+        )}
+        {target && activeHint && targetState && hintLevel && (
+          <div className={styles.hintContent} data-testid="hint-content">
+            <p className={styles.hintMeta} data-testid="hint-meta">
+              Hint {hintLevel} of {HINT_MAX_LEVEL} ({HINT_LEVEL_LABELS[hintLevel]})
+              {' '}for <strong>{DEFECT_LABELS[target]}</strong>
+            </p>
+            <p className={styles.hintText} data-testid="hint-text">
+              {activeHint.text}
+            </p>
+            <p className={styles.hintStatus}>{getHintStatusContext(targetState)}</p>
           </div>
-
-          {/* Polite live region: one announcement per hint request */}
-          <div
-            className={styles.display}
-            role="status"
-            data-testid="hint-display"
-          >
-            {!target && (
-              <p className={styles.placeholder}>
-                All defects repaired — no hints needed. Great work!
-              </p>
-            )}
-
-            {target && !hintLevel && (
-              <p className={styles.placeholder}>
-                No hint requested yet. Need a clue? Plague Doctor’s lantern
-                hints are free and never affect your score.
-              </p>
-            )}
-
-            {target && activeHint && targetState && hintLevel && (
-              <div className={styles.hintContent} data-testid="hint-content">
-                <p className={styles.hintMeta} data-testid="hint-meta">
-                  Hint {hintLevel} of {HINT_MAX_LEVEL} (
-                  {HINT_LEVEL_LABELS[hintLevel]}) for{' '}
-                  <strong>{DEFECT_LABELS[target]}</strong>
-                </p>
-                <p className={styles.hintStatus}>
-                  {getHintStatusContext(targetState)}
-                </p>
-                <p className={styles.hintText} data-testid="hint-text">
-                  {activeHint.text}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </section>
   );

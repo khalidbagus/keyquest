@@ -3,7 +3,7 @@
 
 **Lift the curse. Learn the barrier. Repair the real interface.**
 
-An interactive browser game that teaches web accessibility through a haunted checkout. Built for **Kiroween 2026 · Costume Contest**.
+An interactive browser game about repairing accessibility barriers in a haunted apothecary. Light the counter lantern in Midnight Checkout, then brew a potion in Potion Pantry. Built for **Kiroween 2026 · Costume Contest**.
 
 ![React 19](https://img.shields.io/badge/React-19-149eca)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
@@ -11,27 +11,23 @@ An interactive browser game that teaches web accessibility through a haunted che
 
 ![A friendly ghost holding a golden key in a cozy haunted laboratory](release/artwork/keyquest-cover.png)
 
-*AI-generated cover artwork; the application itself is shown below.*
+*AI-generated cover artwork.*
 
-> **Accessibility notice:** The Challenge Sandbox contains four intentional accessibility barriers. The surrounding application is designed to remain usable while you explore them. Automated checks do not establish full WCAG conformance or certification. You can discover defects directly in the Repair Studio without having to experience each barrier.
+> **Accessibility notice:** The rooms contain five intentional accessibility barriers inside their labeled sandboxes. The surrounding application is designed to remain usable while you explore them. You can discover defects directly in the Repair Studio. Automated checks do not establish full WCAG conformance or certification.
 
 ## Overview
 
-An invisible focus ring, a mouse-only control, an unnamed button, and unreadable text can turn an ordinary checkout into an obstacle course. KeyQuest makes these barriers understandable through practical learning for frontend developers, designers, and students.
+In **Midnight Checkout**, the player restores a focus ring, keyboard activation, a button name, and readable contrast to complete a shopper's order. In **Potion Pantry**, the player adds labels to jars identified by color alone, then uses the repaired shelf to follow a recipe. Repairs change the live interface, and optional explanations show the code and verification evidence.
 
-Inside the fictional **Midnight Checkout**, players investigate four defects, compare before-and-after code, apply repairs, and inspect evidence from the running interface. Repairs change actual DOM attributes, event handling, and styles. This is a guided repair game, rather than a free-form code editor or a multiple-choice quiz.
-
-![Actual Midnight Checkout challenge with its labeled sandbox, progress, hints, and Repair Studio](release/screenshots/midnight-checkout.png)
-
-*Actual local production build, captured November 15, 2026. [Main menu screenshot](release/screenshots/main-menu.png).*
+See the [original Midnight Checkout](release/screenshots/midnight-checkout.png) and [main menu](release/screenshots/main-menu.png) in screenshots from the November 15, 2026 release checkpoint.
 
 ## Features
 
-- One complete challenge with four discoverable accessibility defects.
+- Two playable rooms linked by a door selector. Clocktower Gate is marked **Coming later**.
 - Repair Studio with code comparisons, educational feedback, and live verification.
 - Three progressive hints per defect.
 - Completion summary with elapsed time, hints used, and concepts encountered.
-- Browser-local progress saving, restoration, and reset confirmation.
+- Browser-local progress with migration from older Checkout saves, per-room resets, and a confirmed **Start over**.
 - Emergency Exit and an `Escape` shortcut during the challenge; open modals handle `Escape` first.
 - Challenge render-error recovery and game-module loading/retry UI.
 - Responsive haunted styling and reduced-motion support.
@@ -39,15 +35,15 @@ Inside the fictional **Midnight Checkout**, players investigate four defects, co
 
 ## Gameplay
 
-**Discover → Understand → Repair → Verify → Escape**
+**Discover → Repair → Verify → Use**
 
-1. Start the Midnight Checkout challenge.
-2. Explore with keyboard or mouse, or use **Discover Defect** in the Repair Studio.
-3. Learn why each barrier matters and compare the broken and repaired code.
-4. Apply a repair and inspect its verification evidence.
-5. Verify all four repairs to complete the challenge.
+1. Enter Midnight Checkout and inspect the checkout button beside the lantern.
+2. Apply and verify a repair, then use the repaired control to light the lantern. Open **How this repair works** for code and verification evidence.
+3. Lift the remaining curses, place the order, and take the Pantry Key.
+4. Enter Potion Pantry, restore the jar labels, and follow the recipe. You can remove a wrong ingredient and keep brewing.
+5. Bottle the lantern potion and return to the doors.
 
-Discoveries and verified progress are tracked separately. Use hints when needed or leave through Emergency Exit. Progress stays in your current browser; there are no accounts or backend services.
+Use hints when needed or leave through Emergency Exit. Resume from the opening screen to pick up your browser-local progress.
 
 ## Accessibility challenges
 
@@ -57,6 +53,7 @@ Discoveries and verified progress are tracked separately. Use hints when needed 
 | Mouse-Only Activation | Adds Enter/Space handling and a button role to the custom control | Dispatches keyboard events and observes click activation | 2.1.1 Keyboard |
 | Missing Accessible Name | Adds `aria-label="View shopping cart"` | Inspects naming attributes and text | 4.1.2 Name, Role, Value |
 | Insufficient Text Contrast | Changes the price text to a light foreground | Calculates contrast from computed colors and text size | 1.4.3 Contrast (Minimum) |
+| Color-Only Ingredient Jars | Shows a symbol and a visible name on each jar button | Checks the visible labels and button names | 1.4.1 Use of Color, 4.1.2 Name, Role, Value, 2.5.3 Label in Name |
 
 The name check is a focused DOM heuristic, not the complete accessible-name algorithm. Focus verification detects visible styles but does not prove unclipped rendering or adequate contrast in every context. These checks teach specific repairs; they are not a general-purpose audit.
 
@@ -67,23 +64,21 @@ The name check is a focused DOM heuristic, not the complete accessible-name algo
 ```text
 App → GameProvider + AppShell
   └─ ApplicationLoader → dynamically imported GameRouter
-       ├─ MainMenuView + ProgressRestoreDialog
-       ├─ ChallengeView
-       │    ├─ HintPanel + ResetConfirmDialog
-       │    └─ ErrorBoundary → SandboxSession
-       │         ├─ ChallengeSandbox → MidnightCheckout
-       │         └─ RepairStudio → RepairEngine + VerificationEngine
+       ├─ MainMenuView
+       ├─ DoorSelectorView
+       ├─ ChallengeView → MidnightCheckout + RepairStudio
+       ├─ PantryView → PotionPantry + RepairStudio
        └─ CompletionView
 ```
 
-- **State:** React Context and a reducer track phases, discoveries, repairs, hints, and verification.
-- **Persistence:** `StorageAdapter` validates versioned progress in `localStorage`. Saved repairs are reapplied when a challenge mounts.
+- **State:** React Context and a reducer track discoveries, repairs, hints, and room actions. The room registry derives door availability from progress.
+- **Persistence:** `StorageAdapter` loads progress from `localStorage`. The progress schema validates and migrates older saves. Saved repairs are reapplied when a room mounts.
 - **Repair:** `RepairEngine` changes live attributes, keyboard listeners, and CSS.
-- **Verification:** `VerificationEngine` returns structured evidence from behavior and computed styles. Completion requires all four verified flags.
+- **Verification:** `VerificationEngine` returns evidence from live behavior and computed styles. Players use the verified repairs to complete each room's objective.
 - **Recovery:** The error boundary remounts sandbox and studio together. Loading recovery covers dynamically loaded game JS/CSS, not document/bootstrap failures before React starts.
 - **Delivery:** A static client application with no server API, database, or authentication service.
 
-Explore [source](src), [tests](tests), and the [Kiro specification](.kiro/specs/keyquest-haunted-accessibility-lab/requirements.md).
+Explore the [source](src), [tests](tests), [Midnight Checkout spec](.kiro/specs/adventure-phase-1-midnight-checkout/requirements.md), and [Potion Pantry spec](.kiro/specs/adventure-phase-2-potion-pantry/requirements.md).
 
 ## Getting started
 
@@ -150,8 +145,6 @@ Known limitations:
 - Manual NVDA/VoiceOver testing, comprehensive zoom/reflow checks, and focus-indicator clipping assessment remain pending.
 - The prior engineering report records an unresolved Firefox axe crash and incomplete WebKit results. Neither engine has been independently rerun for this publication review.
 - Parallel accessibility scans have shown instability; use one worker for controlled runs.
-- Failed repair verification leaves the repair applied without an individual retry control. Resetting the challenge clears that state and progress. This limitation is preserved in v1.0.
-- Dismissing the restore dialog with `Escape` currently starts fresh and clears saved progress. Choose **Restore Progress** to retain a session.
 
 Zero axe violations does not mean every check was complete, nor replace testing with assistive technologies and people with disabilities.
 
@@ -185,4 +178,4 @@ Project contributions are offered under the [MIT License](LICENSE). Third-party 
 
 ## Future development
 
-Possible follow-up work includes manual accessibility corrections, browser compatibility improvements, visual refinement, and additional educational scenarios. These are future possibilities, not v1.0 features or work started during release preparation.
+Clocktower Gate is the planned third room. Other follow-up work includes manual assistive-technology testing and first-time player observation.

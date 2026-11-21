@@ -34,6 +34,7 @@ export const DEFECT_LABELS: Record<DefectType, string> = {
   'mouse-only-activation': 'Mouse-Only Activation',
   'missing-accessible-name': 'Missing Accessible Name',
   'insufficient-contrast': 'Insufficient Contrast',
+  'color-only-ingredients': 'Color-Only Ingredients',
 };
 
 /** Label for each hint level, per design spec */
@@ -124,6 +125,24 @@ export const HINT_REGISTRY: readonly HintDefinition[] = [
     level: 3,
     text: 'The repair raises the price text foreground color to crisp light #e0e0e0, exceeding 10:1 contrast so people with low vision can read pricing effortlessly — WCAG 1.4.3 Contrast (Minimum).',
   },
+  // ============================================
+  // Color-Only Ingredients (pantry shelf) — WCAG 1.4.1
+  // ============================================
+  {
+    defectType: 'color-only-ingredients',
+    level: 1,
+    text: 'Compare the recipe card with the shelf. The recipe uses names; try to find a matching name on any jar.',
+  },
+  {
+    defectType: 'color-only-ingredients',
+    level: 2,
+    text: 'The shelf jars are told apart only by color, and their labels are hidden. Switch on the Grayscale lens to see how alike they look, or Screen Reader X-Ray to hear that they have no names.',
+  },
+  {
+    defectType: 'color-only-ingredients',
+    level: 3,
+    text: 'Each jar needs a visible name (and a symbol) that is also its button text. That gives everyone a non-color cue and gives screen readers a name — WCAG 1.4.1 Use of Color and 4.1.2 Name, Role, Value.',
+  },
 ];
 
 /**
@@ -157,9 +176,10 @@ export function getHint(
  * Returns null when every defect is verified (nothing left to hint).
  */
 export function selectHintTarget(
-  defects: Record<DefectType, DefectState>
+  defects: Record<DefectType, DefectState>,
+  order: readonly DefectType[] = DEFECT_ORDER
 ): DefectType | null {
-  return DEFECT_ORDER.find((type) => !defects[type].verified) ?? null;
+  return order.find((type) => !defects[type]?.verified) ?? null;
 }
 
 /**
@@ -171,10 +191,10 @@ export function getHintStatusContext(state: DefectState): string {
     return 'This defect is fully repaired and verified — nice work!';
   }
   if (state.repaired) {
-    return 'A repair has been applied — check its verification status in the Repair Studio.';
+    return 'A repair has been applied, but its live check has not passed yet. Use Check again in the Repair Studio.';
   }
   if (state.discovered) {
-    return 'You have discovered this defect. Pick the right accessibility patch in the Repair Studio when you are ready.';
+    return 'You have discovered this defect. Pick a patch in the Repair Studio when you are ready.';
   }
-  return 'This defect has not been discovered yet — explore the Midnight Checkout, or reveal it with the Discover Defect button in the Repair Studio.';
+  return 'This defect has not been discovered yet. Explore the shop, or use Inspect in the objective or the room journal.';
 }

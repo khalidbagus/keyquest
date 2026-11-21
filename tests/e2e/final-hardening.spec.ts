@@ -1,5 +1,6 @@
 import { test, expect } from './fixtures';
 import AxeBuilder from './helpers/axe';
+import { discover, expectCandles, startRoom } from './helpers/room';
 
 // Hold the real module response so the loading state is deterministic.
 test('startup announces loading before entering the menu', { tag: '@axe' }, async ({ page }) => {
@@ -29,10 +30,8 @@ test('startup announces loading before entering the menu', { tag: '@axe' }, asyn
 
 test('module load failure offers keyboard retry without losing saved progress', { tag: '@axe' }, async ({ page }) => {
   // Save real progress, then make the module unavailable for the whole attempt.
-  await page.goto('/');
-  await page.getByTestId('start-challenge').click();
-  const card = page.locator('div').filter({ has: page.getByRole('heading', { name: 'Invisible Focus', exact: true }) }).filter({ has: page.getByRole('button', { name: 'Discover Defect' }) }).last();
-  await card.getByRole('button', { name: 'Discover Defect' }).click();
+  await startRoom(page);
+  await discover(page, 'invisible-focus');
   await page.keyboard.press('Escape');
   const saved = await page.evaluate(() => localStorage.getItem('keyquest-progress-v1'));
   let unavailable = true;
@@ -52,14 +51,13 @@ test('module load failure offers keyboard retry without losing saved progress', 
   unavailable = false;
   await page.getByRole('button', { name: 'Retry loading' }).focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByTestId('progress-restore-dialog')).toBeVisible();
-  await page.getByTestId('restore-progress').click();
-  await expect(page.getByText('1 / 4 discovered')).toBeVisible();
+  await expect(page.getByTestId('start-challenge')).toHaveText(/Resume Midnight Checkout/);
+  await page.getByTestId('start-challenge').click();
+  await expect(page.getByTestId('room-progress')).toContainText('1 of 4 curses found');
 });
 
 test('reset dialog and hint panel have accessible names and pass axe', { tag: '@axe' }, async ({ page }) => {
-  await page.goto('/');
-  await page.getByTestId('start-challenge').click();
+  await startRoom(page);
   await expect(page.getByRole('region', { name: /challenge sandbox/i })).toBeVisible();
   await page.getByTestId('hint-button').click();
   await expect(page.getByTestId('hint-content')).toBeVisible();
@@ -69,25 +67,36 @@ test('reset dialog and hint panel have accessible names and pass axe', { tag: '@
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
-test('repair feedback retains keyboard focus after verification', async ({ page }) => {
-  await page.goto('/');
-  await page.getByTestId('start-challenge').click();
-  const card = page.locator('div').filter({ has: page.getByRole('heading', { name: 'Invisible Focus', exact: true }) }).filter({ has: page.getByRole('button', { name: 'Discover Defect' }) }).last();
-  await card.getByRole('button', { name: 'Discover Defect' }).click();
+test('verified focus repair moves keyboard focus to the repaired control', async ({ page }) => {
+  await startRoom(page);
+  await discover(page, 'invisible-focus');
   await page.getByTestId('repair-invisible-focus').focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByText('Live DOM Verification Passed')).toBeVisible();
-  await expect(page.locator(':focus')).toContainText('Live DOM Verification Passed');
+  await expect(page.getByText('Verified on the live page')).toBeVisible();
+  const buy = page.getByTestId('defect-invisible-focus');
+  await expect(buy).toBeFocused();
+  expect(await buy.evaluate(el => el.matches(':focus-visible'))).toBe(true);
+  expect(await buy.evaluate(el => getComputedStyle(el).outlineStyle)).toBe('solid');
+  await expect(page.getByTestId('room-status')).toContainText('Press Buy Now to light the lantern.');
 });
 
-test('failed focus verification reports incomplete repair and awards no progress', async ({ page }) => {
-  await page.goto('/');
-  await page.getByTestId('start-challenge').click();
+test('failed focus verification awards no progress and recovers with Check again', async ({ page }) => {
+  await startRoom(page);
   await page.addStyleTag({ content: '[data-testid="defect-invisible-focus"]:focus { outline: none !important; box-shadow: none !important; }' });
-  const card = page.locator('div').filter({ has: page.getByRole('heading', { name: 'Invisible Focus', exact: true }) }).filter({ has: page.getByRole('button', { name: 'Discover Defect' }) }).last();
-  await card.getByRole('button', { name: 'Discover Defect' }).click();
+  await discover(page, 'invisible-focus');
   await page.getByTestId('repair-invisible-focus').click();
-  await expect(page.getByText('Verification Pending / Incomplete')).toBeVisible();
-  await expect(page.getByText('0 / 4 defects repaired')).toBeVisible();
-  await expect(page.getByText('Live DOM Verification Passed')).toHaveCount(0);
+  await expect(page.getByText('The live check did not pass yet')).toBeVisible();
+  await expectCandles(page, 0);
+  await expect(page.getByText('Verified on the live page')).toHaveCount(0);
+  const retry = page.getByTestId('verify-retry');
+  await expect(retry).toBeFocused();
+  // A second failure is reported as a new attempt, not silently repeated.
+  await retry.click();
+  await expect(page.getByTestId('repair-result-invisible-focus')).toContainText('Failed checks: 2');
+  await page.evaluate(() => document.querySelectorAll('style').forEach(s => {
+    if (s.textContent?.includes('outline: none !important')) s.remove();
+  }));
+  await retry.click();
+  await expect(page.getByText('Verified on the live page')).toBeVisible();
+  await expectCandles(page, 1);
 });

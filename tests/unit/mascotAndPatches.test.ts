@@ -42,8 +42,9 @@ describe('mascotRegistry', () => {
 
 describe('patchRegistry (Pick-the-Patch)', () => {
   it('covers all 4 canonical WCAG defects with 3 patch choices each (1 correct, 2 traps)', () => {
-    expect(CURSE_CATALOG).toHaveLength(4);
-    for (const defectType of DEFECT_ORDER) {
+    // Four Checkout curses plus the Potion Pantry shelf curse.
+    expect(CURSE_CATALOG).toHaveLength(5);
+    for (const defectType of [...DEFECT_ORDER, 'color-only-ingredients' as const]) {
       const curse = getCurseByType(defectType);
       expect(curse.type).toBe(defectType);
       expect(curse.patches).toHaveLength(3);

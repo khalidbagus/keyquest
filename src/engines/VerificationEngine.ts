@@ -11,6 +11,7 @@ import type {
   KeyboardVerificationDetails,
   AccessibleNameVerificationDetails,
   ContrastVerificationDetails,
+  LabelVerificationDetails,
 } from '../types';
 
 /**
@@ -48,11 +49,21 @@ export async function verifyKeyboardActivation(
     });
   };
 
-  // Test Enter key
-  const enterKeyWorks = await testKeyActivation('Enter', 'Enter');
+  // Mark the element while synthetic keys are dispatched so the page can tell
+  // the check's presses apart from the player's own. The marker is removed
+  // afterwards and never affects the result.
+  element.dataset.keyquestVerifying = 'true';
+  let enterKeyWorks: boolean;
+  let spaceKeyWorks: boolean;
+  try {
+    // Test Enter key
+    enterKeyWorks = await testKeyActivation('Enter', 'Enter');
 
-  // Test Space key
-  const spaceKeyWorks = await testKeyActivation(' ', 'Space');
+    // Test Space key
+    spaceKeyWorks = await testKeyActivation(' ', 'Space');
+  } finally {
+    delete element.dataset.keyquestVerifying;
+  }
 
   const details: KeyboardVerificationDetails = {
     type: 'keyboard',
@@ -243,6 +254,67 @@ export function verifyContrastRatio(element: HTMLElement): VerificationResult {
   };
 }
 
+function isRenderedWithin(node: HTMLElement, boundary: HTMLElement): boolean {
+  for (let el: HTMLElement | null = node; el; el = el.parentElement) {
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) {
+      return false;
+    }
+    if (el === boundary) break;
+  }
+  return true;
+}
+
+/** Text a screen reader would use as the name: aria-label, else rendered text. */
+function computeButtonName(button: HTMLElement): string {
+  const ariaLabel = button.getAttribute('aria-label')?.trim();
+  if (ariaLabel) return ariaLabel;
+  const parts: string[] = [];
+  const walk = (node: Node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      parts.push(node.textContent ?? '');
+      return;
+    }
+    if (!(node instanceof HTMLElement)) return;
+    if (node.getAttribute('aria-hidden') === 'true') return;
+    if (getComputedStyle(node).display === 'none') return;
+    node.childNodes.forEach(walk);
+  };
+  button.childNodes.forEach(walk);
+  return parts.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Verifies that every ingredient control has a visible label and that the
+ * label is part of its accessible name (WCAG 1.4.1, 4.1.2, 2.5.3).
+ */
+export function verifyIngredientLabels(container: HTMLElement): VerificationResult {
+  const buttons = Array.from(
+    container.querySelectorAll<HTMLElement>('[data-ingredient]')
+  );
+  const failing: string[] = [];
+  for (const button of buttons) {
+    const label = button.querySelector<HTMLElement>('[data-ingredient-label]');
+    const labelText = label?.textContent?.trim() ?? '';
+    const visible = !!label && labelText.length > 0 && isRenderedWithin(label, button);
+    const name = computeButtonName(button).toLowerCase();
+    const named = visible && name.length > 0 && name.includes(labelText.toLowerCase());
+    if (!visible || !named) failing.push(button.dataset.ingredient ?? '?');
+  }
+  const details: LabelVerificationDetails = {
+    type: 'labels',
+    total: buttons.length,
+    labelled: buttons.length - failing.length,
+    failing,
+  };
+  return {
+    passed: buttons.length > 0 && failing.length === 0,
+    defectType: 'color-only-ingredients',
+    checkedAt: Date.now(),
+    details,
+  };
+}
+
 /**
  * Main verification function - dispatches to specific verification.
  */
@@ -259,6 +331,8 @@ export async function verify(
       return verifyAccessibleName(element);
     case 'insufficient-contrast':
       return verifyContrastRatio(element);
+    case 'color-only-ingredients':
+      return verifyIngredientLabels(element);
     default:
       return {
         passed: false,

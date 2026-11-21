@@ -1,6 +1,7 @@
 /**
  * Reset Confirmation Dialog
- * Confirms before resetting challenge progress
+ * Confirms before clearing progress. Used for the in-room Reset and for
+ * Start over on the opening screen.
  * Requirements: 11.1, 11.2, 11.6
  */
 
@@ -12,6 +13,11 @@ interface ResetConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   returnFocusRef: RefObject<HTMLButtonElement | null>;
+  /** Prefix for element ids and test ids. Defaults to "reset". */
+  idPrefix?: string;
+  title?: string;
+  description?: string;
+  confirmLabel?: string;
 }
 
 export function ResetConfirmDialog({
@@ -19,6 +25,10 @@ export function ResetConfirmDialog({
   onConfirm,
   onCancel,
   returnFocusRef,
+  idPrefix = 'reset',
+  title = 'Reset Challenge?',
+  description = 'This will clear all your progress including discovered defects and applied repairs. This action cannot be undone.',
+  confirmLabel = 'Reset',
 }: ResetConfirmDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
@@ -62,18 +72,17 @@ export function ResetConfirmDialog({
       ref={dialogRef}
       className={styles.dialog}
       onCancel={handleDialogCancel}
-      aria-labelledby="reset-dialog-title"
-      aria-describedby="reset-dialog-description"
-      data-testid="reset-confirm-dialog"
+      aria-labelledby={`${idPrefix}-dialog-title`}
+      aria-describedby={`${idPrefix}-dialog-description`}
+      data-testid={`${idPrefix}-confirm-dialog`}
     >
       <div className={styles.content}>
-        <h2 id="reset-dialog-title" className={styles.title}>
-          Reset Challenge?
+        <h2 id={`${idPrefix}-dialog-title`} className={styles.title}>
+          {title}
         </h2>
 
-        <p id="reset-dialog-description" className={styles.description}>
-          This will clear all your progress including discovered defects and
-          applied repairs. This action cannot be undone.
+        <p id={`${idPrefix}-dialog-description`} className={styles.description}>
+          {description}
         </p>
 
         <div className={styles.actions}>
@@ -82,7 +91,7 @@ export function ResetConfirmDialog({
             type="button"
             className={styles.cancelButton}
             onClick={handleCancel}
-            data-testid="reset-cancel"
+            data-testid={`${idPrefix}-cancel`}
           >
             Cancel
           </button>
@@ -90,9 +99,9 @@ export function ResetConfirmDialog({
             type="button"
             className={styles.confirmButton}
             onClick={handleConfirm}
-            data-testid="reset-confirm"
+            data-testid={`${idPrefix}-confirm`}
           >
-            Reset
+            {confirmLabel}
           </button>
         </div>
       </div>

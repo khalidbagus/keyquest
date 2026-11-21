@@ -87,33 +87,38 @@ test('challenge repair and hint controls have visible keyboard focus', async ({ 
   await page.getByTestId('hint-button').click();
   await page.keyboard.press('Tab');
   await inspectFocus(page, page.getByTestId('hint-button'), 'hint', info);
-  const card = page.locator('div').filter({ has: page.getByRole('heading', { name: 'Invisible Focus', exact: true }) }).filter({ has: page.getByRole('button', { name: 'Discover Defect' }) }).last();
-  await inspectFocus(page, card.getByRole('button', { name: 'Discover Defect' }), 'discover', info);
+  await inspectFocus(page, page.getByTestId('inspect-invisible-focus'), 'inspect', info);
   await page.keyboard.press('Enter');
+  // Inspect moves focus to the repair heading; Tab reaches the patches.
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await expect(page.getByTestId('repair-invisible-focus')).toBeFocused();
   await inspectFocus(page, page.getByTestId('repair-invisible-focus'), 'repair', info);
   // The intentionally broken focus defect stays broken until a repair is applied.
   const broken = page.getByTestId('defect-invisible-focus');
   await broken.focus();
   expect(await broken.evaluate(el => getComputedStyle(el).outlineStyle)).toBe('none');
-  await page.getByTestId('repair-invisible-focus').click();
-  await expect(page.getByText('Live DOM Verification Passed')).toBeVisible();
-  await page.keyboard.press('Tab');
+  await page.getByTestId('repair-invisible-focus').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('Verified on the live page')).toBeVisible();
+  // The verified repair moves keyboard focus onto the repaired control.
+  await expect(broken).toBeFocused();
   await inspectFocus(page, broken, 'repaired-sandbox-focus', info);
 });
 
-test('reset and restore dialog actions have visible keyboard focus', async ({ page }, info) => {
+test('reset dialog and resume actions have visible keyboard focus', async ({ page }, info) => {
   await start(page);
   await page.getByTestId('reset-button').click();
   await page.keyboard.press('Tab');
   await inspectFocus(page, page.getByRole('button', { name: 'Cancel' }), 'reset-cancel', info);
   await inspectFocus(page, page.getByTestId('reset-confirm'), 'reset-confirm', info);
   await page.getByRole('button', { name: 'Cancel' }).click();
-  await page.getByRole('button', { name: 'Discover Defect' }).first().click();
+  await page.getByTestId('inspect-invisible-focus').click();
   await page.keyboard.press('Escape');
   await page.reload();
-  await expect(page.getByTestId('progress-restore-dialog')).toBeVisible();
+  await expect(page.getByTestId('start-challenge')).toHaveText(/Resume Midnight Checkout/);
   await page.keyboard.press('Tab');
-  await inspectFocus(page, page.getByTestId('restore-progress'), 'restore', info);
+  await inspectFocus(page, page.getByTestId('start-challenge'), 'resume', info);
   await inspectFocus(page, page.getByTestId('start-fresh'), 'start-fresh', info);
 });
 

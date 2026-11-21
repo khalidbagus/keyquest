@@ -7,12 +7,8 @@
 
 import { test, expect, type Page } from './fixtures';
 import AxeBuilder from './helpers/axe';
+import { completeRoom, discover, expectCandles, repair, startRoom as startChallenge } from './helpers/room';
 
-async function startChallenge(page: Page) {
-  await page.goto('/');
-  await page.getByTestId('start-challenge').click();
-  await expect(page.getByTestId('challenge-sandbox')).toBeVisible();
-}
 
 async function requestHint(page: Page) {
   await page.getByTestId('hint-button').click();
@@ -26,14 +22,6 @@ async function getHintText(page: Page) {
   return page.getByTestId('hint-text').innerText();
 }
 
-async function discoverDefect(page: Page, name: string) {
-  const card = page
-    .locator('div')
-    .filter({ has: page.getByRole('heading', { name, exact: true }) })
-    .filter({ has: page.getByRole('button', { name: 'Discover Defect' }) })
-    .last();
-  await card.getByRole('button', { name: 'Discover Defect' }).click();
-}
 
 test.describe('Hint Button', () => {
   test('hint button is visible and keyboard accessible during challenge', async ({
@@ -73,7 +61,7 @@ test.describe('Hint Button', () => {
     await requestHint(page);
 
     // Hints must not mark anything as repaired or discovered
-    await expect(page.getByText('0 / 4 defects repaired')).toBeVisible();
+    await expectCandles(page, 0);
     await expect(
       page.getByTestId('repair-invisible-focus')
     ).not.toBeVisible();
@@ -150,7 +138,7 @@ test.describe('Contextual Hints', () => {
     );
 
     // Discover the same defect via the Repair Studio
-    await discoverDefect(page, 'Invisible Focus');
+    await discover(page, 'invisible-focus');
 
     // Next hint (level 2 for the same defect) reflects discovery
     await requestHint(page);
@@ -165,9 +153,9 @@ test.describe('Contextual Hints', () => {
     await startChallenge(page);
 
     // Discover and repair the first defect (auto-verifies)
-    await discoverDefect(page, 'Invisible Focus');
+    await discover(page, 'invisible-focus');
     await page.getByTestId('repair-invisible-focus').click();
-    await expect(page.getByText('1 / 4 defects repaired')).toBeVisible();
+    await expectCandles(page, 1);
 
     // The next hint targets the next unverified defect at level 1
     await requestHint(page);
@@ -281,19 +269,11 @@ test.describe('Hint Accessibility', () => {
     await startChallenge(page);
 
     // Never touch the hint button
-    const repairFlow = async (
-      name: string,
-      testId: string
-    ) => {
-      await discoverDefect(page, name);
-      await page.getByTestId(testId).click();
-    };
+    await repair(page, 'invisible-focus');
+    await repair(page, 'mouse-only-activation');
+    await repair(page, 'missing-accessible-name');
+    await repair(page, 'insufficient-contrast');
 
-    await repairFlow('Invisible Focus', 'repair-invisible-focus');
-    await repairFlow('Mouse-Only Activation', 'repair-mouse-only');
-    await repairFlow('Missing Accessible Name', 'repair-missing-name');
-    await repairFlow('Insufficient Contrast', 'repair-low-contrast');
-
-    await expect(page.getByTestId('level-complete')).toBeVisible();
+    await completeRoom(page);
   });
 });

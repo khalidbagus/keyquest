@@ -7,16 +7,15 @@
 import { useGame } from '../../context/GameContext';
 import { EmergencyExitButton } from '../EmergencyExit/EmergencyExitButton';
 import { KeyCrestIcon } from '../Icons/ApothecaryIcons';
+import { ROOM_DEFECTS } from '../../registry/roomsRegistry';
 import styles from './Header.module.css';
 
 export function Header() {
   const { state, progress } = useGame();
   const showEmergencyExit = state.phase === 'challenge';
 
-  const verifiedCount = Object.values(progress.defects).filter(
-    (d) => d.verified
-  ).length;
-  const remaining = 4 - verifiedCount;
+  const roomCurses = ROOM_DEFECTS[progress.currentRoom];
+  const remaining = roomCurses.filter((t) => !progress.defects[t].verified).length;
 
   return (
     <header className={styles.header}>

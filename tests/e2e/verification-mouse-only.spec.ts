@@ -5,6 +5,7 @@
  */
 
 import { test, expect } from './fixtures';
+import { discover } from './helpers/room';
 
 test.describe('Mouse-Only Activation Defect Verification', () => {
   test.beforeEach(async ({ page }) => {
@@ -70,8 +71,7 @@ test.describe('Mouse-Only Activation Defect Verification', () => {
     await addButton.focus();
 
     // Discover and apply the repair
-    await page.click('button:has-text("Discover Defect")');
-    await page.waitForTimeout(100);
+    await discover(page, 'mouse-only-activation');
     
     // Click the repair button for mouse-only
     await page.click('[data-testid="repair-mouse-only"]');
@@ -103,8 +103,7 @@ test.describe('Mouse-Only Activation Defect Verification', () => {
 
     // Apply repair
     await addButton.focus();
-    await page.click('button:has-text("Discover Defect")');
-    await page.waitForTimeout(100);
+    await discover(page, 'mouse-only-activation');
     await page.click('[data-testid="repair-mouse-only"]');
     await page.waitForTimeout(100);
 
@@ -122,8 +121,7 @@ test.describe('Mouse-Only Activation Defect Verification', () => {
 
     // Apply repair
     await addButton.focus();
-    await page.click('button:has-text("Discover Defect")');
-    await page.waitForTimeout(100);
+    await discover(page, 'mouse-only-activation');
     await page.click('[data-testid="repair-mouse-only"]');
     await page.waitForTimeout(100);
 
@@ -137,8 +135,7 @@ test.describe('Mouse-Only Activation Defect Verification', () => {
 
     // Apply repair
     await addButton.focus();
-    await page.click('button:has-text("Discover Defect")');
-    await page.waitForTimeout(100);
+    await discover(page, 'mouse-only-activation');
     await page.click('[data-testid="repair-mouse-only"]');
     await page.waitForTimeout(200);
 

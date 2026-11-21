@@ -15,6 +15,7 @@ dist-ssr
 docs
 
 # Generated verification evidence (source tests and fixtures remain tracked)
+.playwright-mcp/
 playwright-report/
 test-results/
 test-results-*/

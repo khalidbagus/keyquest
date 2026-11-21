@@ -1,0 +1,123 @@
+/**
+ * Counter lantern and Pantry Key.
+ * Motion: lantern glass and halo crossfade (state indication, 220ms, opacity
+ * only). The key's arrival is the room-complete beat (rare, 420ms). Both
+ * collapse to instant changes under either reduced-motion setting.
+ */
+
+.lantern {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+  display: inline-flex;
+  width: 56px;
+  height: 70px;
+  flex-shrink: 0;
+}
+
+.lanternSvg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Solid-alpha halo behind the lantern; no gradient sits behind any text. */
+.halo {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  background-color: rgba(251, 191, 36, 0.22);
+  box-shadow: 0 0 24px 8px rgba(251, 191, 36, 0.28);
+  opacity: 0;
+  transform: scale(0.9);
+  transition:
+    opacity 220ms var(--ease-out),
+    transform 220ms var(--ease-out);
+}
+
+.glassLit,
+.flame {
+  opacity: 0;
+  transition: opacity 220ms var(--ease-out);
+}
+
+.wick {
+  transition: opacity 220ms var(--ease-out);
+}
+
+.lanternLit .halo {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.lanternLit .glassLit {
+  opacity: 0.85;
+}
+
+.lanternLit .flame {
+  opacity: 1;
+}
+
+.lanternLit .wick {
+  opacity: 0;
+}
+
+.key {
+  display: inline-flex;
+  width: 64px;
+  height: 28px;
+  flex-shrink: 0;
+  animation: keyArrive 420ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.keySvg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+@keyframes keyArrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halo,
+  .glassLit,
+  .flame,
+  .wick {
+    transition: none;
+  }
+
+  .halo {
+    transform: none;
+  }
+
+  .key {
+    animation: none;
+  }
+}
+
+:root[data-reduced-motion='true'] .halo,
+:root[data-reduced-motion='true'] .glassLit,
+:root[data-reduced-motion='true'] .flame,
+:root[data-reduced-motion='true'] .wick {
+  transition: none;
+}
+
+:root[data-reduced-motion='true'] .halo {
+  transform: none;
+}
+
+:root[data-reduced-motion='true'] .key {
+  animation: none;
+}
+
+@media (max-width: 640px) {
+  .lantern {
+    width: 44px;
+    height: 55px;
+  }
+}

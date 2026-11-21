@@ -1,15 +1,16 @@
 /**
- * Main Menu View Styles (v2 Twilight-Plum Apothecary Split Hero)
+ * Main Menu View Styles (Adventure opening)
+ * One primary action up front; costume and journal are on demand.
  */
 
 .container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-4);
+  width: 100%;
   max-width: 1080px;
   margin: 0 auto;
-  padding-block: var(--space-2) var(--space-6);
+  padding: var(--space-4);
 }
 
 .heroCard {
@@ -17,18 +18,16 @@
   background-color: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--border-radius-lg);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-lg);
+  padding: var(--space-5);
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--space-6);
+  gap: var(--space-5);
   align-items: center;
-  position: relative;
 }
 
 @media (min-width: 840px) {
   .heroCard {
-    grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+    grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
     padding: var(--space-8);
     gap: var(--space-8);
   }
@@ -38,36 +37,33 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-4);
-  text-align: left;
+  gap: var(--space-3);
 }
 
 .caseBadge {
-  display: inline-block;
-  padding: var(--space-1) var(--space-3);
-  background-color: var(--color-bg-deep);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  color: var(--color-warning);
-  font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-warning);
 }
 
 .heading {
-  font-size: clamp(1.85rem, 1.35rem + 2vw, 2.75rem);
+  font-size: clamp(1.75rem, 1.3rem + 2vw, 2.5rem);
   margin: 0;
   color: var(--color-text);
   line-height: 1.12;
 }
 
+.heading:focus:not(:focus-visible) {
+  outline: none;
+}
+
 .description {
-  max-width: 58ch;
+  max-width: 54ch;
   color: var(--color-text-muted);
   margin: 0;
-  font-size: var(--font-size-base);
-  line-height: 1.65;
+  line-height: 1.6;
 }
 
 .description strong {
@@ -78,7 +74,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-3);
+  gap: var(--space-2);
   width: 100%;
   margin-top: var(--space-1);
 }
@@ -91,18 +87,23 @@
   font-family: var(--font-display);
   font-size: var(--font-size-lg);
   font-weight: 700;
-  padding: var(--space-3) var(--space-8);
+  padding: var(--space-3) var(--space-6);
   min-height: 54px;
   background-color: var(--color-primary);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-sm);
+  transition:
+    background-color 150ms ease,
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .startButton:hover {
   background-color: var(--color-primary-hover);
-  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.startButton:active {
+  transform: scale(0.97);
 }
 
 .startArrow {
@@ -110,17 +111,43 @@
   line-height: 1;
 }
 
-.ctaSubtext {
+.resumeSummary {
   margin: 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
-.ctaSubtext kbd,
-.briefingText kbd,
-.disclaimer kbd {
+.secondaryButton {
+  background-color: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.secondaryButton:hover:not(:disabled) {
+  background-color: var(--color-secondary);
+}
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  max-width: 56ch;
+}
+
+.noticeIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-warning);
+}
+
+.notice kbd {
   display: inline-block;
-  padding: 1px 6px;
+  padding: 0 6px;
   background-color: var(--color-bg-deep);
   border: 1px solid var(--color-border);
   border-radius: 4px;
@@ -129,7 +156,6 @@
   font-weight: 600;
 }
 
-/* Right Column: Live Animated Companion Stage */
 .heroStageColumn {
   display: flex;
   flex-direction: column;
@@ -139,7 +165,7 @@
 
 .companionPlate {
   width: 100%;
-  max-width: 340px;
+  max-width: 320px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -148,13 +174,6 @@
   background-color: var(--color-bg-deep);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-md);
-}
-
-.companionIdentity {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
 }
 
 .companionName {
@@ -164,150 +183,61 @@
   color: var(--color-text);
 }
 
-.companionAction {
-  font-size: var(--font-size-xs);
-  color: var(--color-warning);
-}
-
 .costumeButton {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  min-height: var(--min-touch-target);
+  gap: 6px;
+  flex-shrink: 0;
   background-color: var(--color-secondary);
   color: var(--color-text);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  flex-shrink: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
 }
 
-.costumeButton:hover {
+.costumeButton:hover:not(:disabled) {
   background-color: var(--color-secondary-hover);
-  border-color: var(--color-warning);
 }
 
-.quickRoster {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.quickPill {
-  width: 44px;
-  height: 44px;
-  padding: 4px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 42%, #f6effd 0%, #dfccef 100%);
-  border: 2px solid var(--color-border);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.quickPill:hover {
-  background: radial-gradient(circle at 50% 42%, #ffffff 0%, #e7d7f6 100%);
-  border-color: var(--color-warning);
-}
-
-.quickPillActive {
-  border-color: var(--color-warning);
-  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.35);
-}
-
-.quickPillImg {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-
-/* Mission Briefing 3-Column Grid */
-.briefingGrid {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--space-4);
-}
-
-.briefingCard {
+/* Journal */
+.journal {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-md);
-  padding: var(--space-5);
-  text-align: left;
+  padding: var(--space-1) var(--space-5);
+}
+
+.journalSummary {
+  display: flex;
+  align-items: center;
+  min-height: var(--min-touch-target);
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--color-text);
+  border-radius: var(--border-radius-sm);
+}
+
+.journalBody {
+  padding-bottom: var(--space-4);
+}
+
+.steps {
+  margin: var(--space-2) 0 var(--space-4);
+  padding-left: var(--space-5);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-
-.briefingHeader {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.briefingIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background-color: var(--color-bg-deep);
-  border: 1px solid var(--color-border);
-  color: var(--color-warning);
-  flex-shrink: 0;
-}
-
-.briefingTitle {
-  margin: 0;
-  font-size: var(--font-size-base);
-  color: var(--color-text);
-}
-
-.briefingText {
-  margin: 0;
-  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  line-height: 1.6;
+  font-size: var(--font-size-sm);
 }
 
-.briefingText strong {
+.steps strong {
   color: var(--color-text);
-}
-
-/* Four Curse Potions Preview */
-.cursesSection {
-  width: 100%;
-  background-color: var(--color-surface-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-md);
-  padding: var(--space-5);
-}
-
-.cursesHeader {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-  margin-bottom: var(--space-4);
 }
 
 .cursesHeading {
-  margin: 0;
   font-size: var(--font-size-base);
-  color: var(--color-text);
-}
-
-.cursesSubtle {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  margin: 0 0 var(--space-2);
 }
 
 .cursesList {
@@ -315,50 +245,23 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-3);
-}
-
-@media (min-width: 560px) {
-  .cursesList {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 900px) {
-  .cursesList {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-2);
 }
 
 .curseItem {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-md);
-  padding: var(--space-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  text-align: left;
-}
-
-.curseTopRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-bg-deep);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
 }
 
 .potionThumb {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background-color: var(--color-bg-deep);
-  border: 1px solid var(--color-border);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
 }
 
@@ -369,27 +272,10 @@
   display: block;
 }
 
-.curseMeta {
+.curseText {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-}
-
-.wcagTag {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  color: var(--color-warning);
-  font-weight: 700;
-}
-
-.levelTag {
-  font-size: var(--font-size-xs);
-  padding: 1px 6px;
-  border-radius: 4px;
-  background-color: var(--color-bg-deep);
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
+  min-width: 0;
 }
 
 .curseTitle {
@@ -397,67 +283,52 @@
   color: var(--color-text);
 }
 
-.curseSymptom {
+.curseMeta {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  line-height: 1.45;
-}
-
-/* Disclaimer Banner */
-.disclaimer {
-  width: 100%;
-  padding: var(--space-4) var(--space-5);
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-warning);
-  border-radius: var(--border-radius-md);
-  text-align: left;
-}
-
-.disclaimer h3 {
-  color: var(--color-warning);
-  margin: 0 0 var(--space-2);
-  font-size: var(--font-size-base);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.disclaimerIcon {
-  flex-shrink: 0;
-}
-
-.disclaimer p {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  margin: 0;
-  line-height: 1.6;
 }
 
 @media (max-width: 640px) {
+  .container {
+    padding: 0;
+  }
+
   .heroCard {
-    padding: var(--space-5) var(--space-4);
+    padding: var(--space-4);
+    gap: var(--space-4);
   }
 
   .startButton {
     width: 100%;
-    padding: var(--space-3) var(--space-4);
   }
 
-  .briefingCard,
-  .cursesSection {
-    padding: var(--space-4);
+  .journal {
+    padding: var(--space-1) var(--space-3);
   }
 }
 
-@media (max-height: 700px) {
-  .container {
-    gap: var(--space-4);
-    padding-block: var(--space-1) var(--space-3);
+@media (prefers-reduced-motion: reduce) {
+  .startButton:active {
+    transform: none;
   }
+}
 
-  .heroCard {
-    padding: var(--space-5);
-    gap: var(--space-4);
-  }
+:root[data-reduced-motion='true'] .startButton:active {
+  transform: none;
+}
+
+/* Disclosure marker (flex summaries drop the native one) */
+.journalSummary::before {
+  content: '';
+  width: 0;
+  height: 0;
+  margin-right: var(--space-2);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid currentColor;
+  transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+details[open] > .journalSummary::before {
+  transform: rotate(90deg);
 }

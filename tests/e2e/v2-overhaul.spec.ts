@@ -55,21 +55,26 @@ test.describe('KeyQuest v2 — Rive Mascots, Costume Locker, Ghost Vision & Pick
     await page.goto('/');
     await page.getByTestId('start-challenge').click();
 
-    const card = page
-      .locator('div')
-      .filter({ has: page.getByRole('heading', { name: 'Invisible Focus', exact: true }) })
-      .filter({ has: page.getByRole('button', { name: 'Discover Defect' }) })
-      .last();
-    await card.getByRole('button', { name: 'Discover Defect' }).click();
+    await page.getByTestId('inspect-invisible-focus').click();
+    await expect(page.getByRole('heading', { name: 'Buy Now hides keyboard focus' })).toBeFocused();
 
     // Try a trap patch first: shows diagnosis, does NOT award progress
     await page.getByTestId('trap-focus-trap-hover').click();
     await expect(page.getByTestId('trap-feedback-invisible-focus')).toBeVisible();
-    await expect(page.getByText('0 / 4 defects repaired')).toBeVisible();
+    await expect(page.getByTestId('room-progress')).toContainText('0 of 4 candles lit');
+    // Every patch stays available for a retry.
+    await expect(page.getByTestId('repair-invisible-focus')).toBeEnabled();
 
     // Now pick the real WCAG fix: repairs and verifies live DOM
     await page.getByTestId('repair-invisible-focus').click();
-    await expect(page.getByText('Live DOM Verification Passed')).toBeVisible();
-    await expect(page.getByText('1 / 4 defects repaired')).toBeVisible();
+    await expect(page.getByText('Verified on the live page')).toBeVisible();
+    await expect(page.getByTestId('room-progress')).toContainText('1 of 4 candles lit');
+    // Payoff: focus lands on the repaired control with a real ring, and it lights the lantern.
+    const buy = page.getByTestId('defect-invisible-focus');
+    await expect(buy).toBeFocused();
+    expect(await buy.evaluate(el => getComputedStyle(el).outlineStyle)).toBe('solid');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('[data-lit="true"]')).toHaveCount(1);
+    await expect(page.getByTestId('room-status')).toHaveText('Lantern lit. The counter glows again.');
   });
 });

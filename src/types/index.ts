@@ -8,10 +8,27 @@
 // ============================================
 
 export type DefectType =
+  // Room 1: Midnight Checkout
   | 'invisible-focus'
   | 'mouse-only-activation'
   | 'missing-accessible-name'
-  | 'insufficient-contrast';
+  | 'insufficient-contrast'
+  // Room 2: Potion Pantry
+  | 'color-only-ingredients';
+
+// ============================================
+// ROOMS
+// ============================================
+
+export type RoomId = 'checkout' | 'pantry' | 'clocktower';
+
+export type IngredientId =
+  | 'moonpetal'
+  | 'ember-salt'
+  | 'glowcap'
+  | 'nightshade'
+  | 'bog-moss'
+  | 'ash-dust';
 
 export interface DefectDefinition {
   type: DefectType;
@@ -58,7 +75,8 @@ export type VerificationDetails =
   | FocusVerificationDetails
   | KeyboardVerificationDetails
   | AccessibleNameVerificationDetails
-  | ContrastVerificationDetails;
+  | ContrastVerificationDetails
+  | LabelVerificationDetails;
 
 export interface FocusVerificationDetails {
   type: 'focus';
@@ -94,17 +112,62 @@ export interface ContrastVerificationDetails {
   meetsRequirement: boolean;
 }
 
+/** Every ingredient control shows a visible label that is also its name. */
+export interface LabelVerificationDetails {
+  type: 'labels';
+  total: number;
+  labelled: number;
+  /** Ingredient ids whose visible label or accessible name is missing. */
+  failing: string[];
+}
+
 // ============================================
 // PROGRESS STATE (localStorage)
 // ============================================
 
+/** Actions the player takes with repaired controls in the Midnight Checkout. */
+export interface CheckoutRoomState {
+  lanternLit: boolean;
+  candleAdded: boolean;
+  orderPlaced: boolean;
+  /** The player took the Pantry Key; the Checkout is cleared. */
+  keyTaken: boolean;
+}
+
+export type CheckoutRoomAction =
+  | 'light-lantern'
+  | 'add-candle'
+  | 'place-order'
+  | 'take-key';
+
+/** The Potion Pantry: what is in the cauldron and whether it brewed. */
+export interface PantryRoomState {
+  cauldron: IngredientId[];
+  brewed: boolean;
+  /** The player bottled the lantern potion; the Pantry is cleared. */
+  potionTaken: boolean;
+}
+
+export type PantryAction =
+  | { action: 'add'; ingredient: IngredientId }
+  | { action: 'remove'; index: number }
+  | { action: 'bottle' };
+
+/**
+ * Version 2 adds rooms. Version 1 saves (Checkout only) are migrated on load
+ * with their discoveries, repairs, verification, and hints kept.
+ */
 export interface ProgressState {
-  version: 1;
+  version: 2;
   sessionId: string;
   startedAt: number;
   lastUpdatedAt: number;
+  currentRoom: RoomId;
   defects: Record<DefectType, DefectState>;
   hintsUsed: Record<DefectType, number>;
+  checkout: CheckoutRoomState;
+  pantry: PantryRoomState;
+  /** Every room built so far is cleared. */
   isComplete: boolean;
   completedAt: number | null;
 }
@@ -122,18 +185,20 @@ export interface ErrorInfo {
 }
 
 export interface CompletionSummary {
+  roomId: RoomId;
   totalTime: number;
   defectsRepaired: DefectType[];
   hintsUsed: Record<DefectType, number>;
   conceptsLearned: string[];
 }
 
-export type GamePhase = 'loading' | 'menu' | 'challenge' | 'completion' | 'error';
+export type GamePhase = 'loading' | 'menu' | 'challenge' | 'doors' | 'completion' | 'error';
 
 export type GameState =
   | { phase: 'loading' }
   | { phase: 'menu' }
   | { phase: 'challenge' }
+  | { phase: 'doors' }
   | { phase: 'completion'; summary: CompletionSummary }
   | { phase: 'error'; error: ErrorInfo };
 
@@ -149,7 +214,14 @@ export type GameAction =
   | { type: 'EMERGENCY_EXIT' }
   | { type: 'COMPLETE_LEVEL' }
   | { type: 'RESET_CHALLENGE' }
-  | { type: 'RESTORE_PROGRESS'; progress: ProgressState };
+  | { type: 'RESTORE_PROGRESS'; progress: ProgressState }
+  | { type: 'HYDRATE_PROGRESS'; progress: ProgressState }
+  | { type: 'ROOM_ACTION'; action: CheckoutRoomAction }
+  | ({ type: 'PANTRY_ACTION' } & PantryAction)
+  | { type: 'ENTER_ROOM'; roomId: RoomId }
+  | { type: 'OPEN_DOORS' }
+  | { type: 'COMPLETE_ROOM'; roomId: RoomId }
+  | { type: 'RESET_ROOM'; roomId: RoomId };
 
 // ============================================
 // HINTS
@@ -171,4 +243,6 @@ export interface GameContextValue {
   progress: ProgressState;
   saveProgress: () => void;
   resetProgress: () => void;
+  /** Reset one room and save right away (not on the autosave debounce). */
+  resetRoom: (roomId: RoomId) => void;
 }

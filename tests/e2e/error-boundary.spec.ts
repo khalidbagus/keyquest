@@ -12,28 +12,8 @@
 
 import { test, expect, type Page } from './fixtures';
 import AxeBuilder from './helpers/axe';
+import { discover, expectCandles, repair, startRoom as startChallenge } from './helpers/room';
 
-/**
- * Helper to navigate to challenge view
- */
-async function startChallenge(page: Page) {
-  await page.goto('/');
-  await page.getByTestId('start-challenge').click();
-  await expect(page.getByTestId('challenge-sandbox')).toBeVisible();
-}
-
-/**
- * Helper to discover and repair a defect using the same pattern as existing tests
- */
-async function repair(page: Page, name: string, testId: string) {
-  const card = page
-    .locator('div')
-    .filter({ has: page.getByRole('heading', { name, exact: true }) })
-    .filter({ has: page.getByRole('button', { name: 'Discover Defect' }) })
-    .last();
-  await card.getByRole('button', { name: 'Discover Defect' }).click();
-  await page.getByTestId(testId).click();
-}
 
 test.describe('Error Boundary', () => {
   test.describe('Error UI Display', () => {
@@ -61,10 +41,10 @@ test.describe('Error Boundary', () => {
       await startChallenge(page);
 
       // Full repair flow should still work with error boundary in place
-      await repair(page, 'Invisible Focus', 'repair-invisible-focus');
+      await repair(page, 'invisible-focus');
 
       // Verify repair was successful
-      await expect(page.getByText('1 / 4 defects repaired')).toBeVisible();
+      await expectCandles(page, 1);
     });
   });
 
@@ -88,32 +68,27 @@ test.describe('Error Boundary', () => {
       await startChallenge(page);
 
       // Discover a defect first
-      const card = page
-        .locator('div')
-        .filter({ has: page.getByRole('heading', { name: 'Invisible Focus', exact: true }) })
-        .filter({ has: page.getByRole('button', { name: 'Discover Defect' }) })
-        .last();
-      await card.getByRole('button', { name: 'Discover Defect' }).click();
+      await discover(page, 'invisible-focus');
 
       // Verify discovered
-      await expect(page.getByText('1 / 4 discovered')).toBeVisible();
+      await expect(page.getByTestId('room-progress')).toContainText('1 of 4 curses found');
 
       // Use the regular reset flow (similar to what error boundary reset would do)
       await page.getByTestId('reset-button').click();
       await page.getByTestId('reset-confirm').click();
 
       // After reset, progress should be cleared
-      await expect(page.getByText('0 / 4 defects repaired')).toBeVisible();
+      await expectCandles(page, 0);
     });
 
     test('return to menu preserves progress', async ({ page }) => {
       await startChallenge(page);
 
       // Discover and repair a defect
-      await repair(page, 'Missing Accessible Name', 'repair-missing-name');
+      await repair(page, 'missing-accessible-name');
 
       // Verify repair
-      await expect(page.getByText('1 / 4 defects repaired')).toBeVisible();
+      await expectCandles(page, 1);
 
       // Use emergency exit (same as error boundary's return to menu)
       await page.keyboard.press('Escape');
@@ -121,17 +96,13 @@ test.describe('Error Boundary', () => {
       // Verify we're back at menu
       await expect(page.getByTestId('start-challenge')).toBeVisible();
 
-      // Progress should be saved - reload the page to trigger restore dialog
+      // Progress is saved: reload and resume from the opening screen
       await page.reload();
-      
-      // Wait for restore dialog to appear
-      await expect(page.getByTestId('progress-restore-dialog')).toBeVisible();
-      
-      // Click restore using data-testid
-      await page.getByTestId('restore-progress').click();
+      await expect(page.getByTestId('start-challenge')).toHaveText(/Resume Midnight Checkout/);
+      await page.getByTestId('start-challenge').click();
       
       // Should show the repair was preserved
-      await expect(page.getByText('1 / 4 defects repaired')).toBeVisible();
+      await expectCandles(page, 1);
     });
   });
 
@@ -171,41 +142,35 @@ test.describe('Error Boundary', () => {
       // Perform multiple reset cycles
       for (let i = 0; i < 3; i++) {
         // Discover a defect
-        const card = page
-          .locator('div')
-          .filter({ has: page.getByRole('heading', { name: 'Invisible Focus', exact: true }) })
-          .filter({ has: page.getByRole('button', { name: 'Discover Defect' }) })
-          .last();
-        await card.getByRole('button', { name: 'Discover Defect' }).click();
+        await discover(page, 'invisible-focus');
 
         // Reset
         await page.getByTestId('reset-button').click();
         await page.getByTestId('reset-confirm').click();
 
         // Verify clean state
-        await expect(page.getByText('0 / 4 defects repaired')).toBeVisible();
+        await expectCandles(page, 0);
         await expect(page.getByTestId('challenge-sandbox')).toBeVisible();
       }
 
       // After multiple resets, should still be able to complete full flow
-      await repair(page, 'Invisible Focus', 'repair-invisible-focus');
-      await expect(page.getByText('1 / 4 defects repaired')).toBeVisible();
+      await repair(page, 'invisible-focus');
+      await expectCandles(page, 1);
     });
 
     test('progress state remains consistent after menu round-trip', async ({ page }) => {
       await startChallenge(page);
 
       // Do some work
-      await repair(page, 'Mouse-Only Activation', 'repair-mouse-only');
+      await repair(page, 'mouse-only-activation');
 
       // Exit to menu
       await page.keyboard.press('Escape');
       await expect(page.getByTestId('start-challenge')).toBeVisible();
       
-      // Reload to trigger restore dialog
+      // Reload and resume from the opening screen
       await page.reload();
-      await expect(page.getByTestId('progress-restore-dialog')).toBeVisible();
-      await page.getByTestId('restore-progress').click();
+      await page.getByTestId('start-challenge').click();
       
       // Wait for challenge view to load fully
       await expect(page.getByTestId('challenge-sandbox')).toBeVisible();
@@ -275,7 +240,7 @@ async function setRenderFailure(page: Page, broken: boolean) {
 test('actual fallback passes axe and retry restores repairs and keyboard focus', { tag: '@axe' }, async ({ page }) => {
   await installRenderFailure(page);
   await startChallenge(page);
-  await repair(page, 'Missing Accessible Name', 'repair-missing-name');
+  await repair(page, 'missing-accessible-name');
   await page.getByTestId('hint-button').click();
   await setRenderFailure(page, true);
   // A Context update triggers a subsequent render error in the checkout.
@@ -292,24 +257,24 @@ test('actual fallback passes axe and retry restores repairs and keyboard focus',
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('error-boundary-ui')).toHaveCount(0);
   await expect(page.getByTestId('defect-missing-name')).toHaveAccessibleName('View shopping cart');
-  await expect(page.getByText('1 / 4 defects repaired')).toBeVisible();
+  await expectCandles(page, 1);
   await expect(page.locator(':focus')).toContainText('Repair Studio');
   await setRenderFailure(page, true);
   await page.getByTestId('hint-button').click();
   await expect(page.getByTestId('error-boundary-ui')).toBeVisible();
   await page.getByTestId('error-menu-button').focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('heading', { name: 'Welcome to KeyQuest' })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'The apothecary has gone dark' })).toBeFocused();
   await page.reload();
-  await page.getByTestId('restore-progress').click();
+  await page.getByTestId('start-challenge').click();
   await expect(page.getByTestId('defect-missing-name')).toHaveAccessibleName('View shopping cart');
-  await expect(page.getByText('1 / 4 defects repaired')).toBeVisible();
+  await expectCandles(page, 1);
 });
 
 test('actual reset remounts sandbox while preserving discoveries repairs and hints', async ({ page }) => {
   await installRenderFailure(page);
   await startChallenge(page);
-  await repair(page, 'Mouse-Only Activation', 'repair-mouse-only');
+  await repair(page, 'mouse-only-activation');
   await page.getByTestId('hint-button').click();
   await setRenderFailure(page, true);
   await page.getByTestId('hint-button').click();
@@ -319,7 +284,7 @@ test('actual reset remounts sandbox while preserving discoveries repairs and hin
   await page.keyboard.press('Space');
   await expect(page.getByTestId('error-boundary-ui')).toHaveCount(0);
   await expect(page.getByTestId('defect-mouse-only')).toHaveAttribute('role', 'button');
-  await expect(page.getByText('1 / 4 defects repaired')).toBeVisible();
+  await expectCandles(page, 1);
   await expect(page.locator(':focus')).toContainText('Repair Studio');
   await page.getByTestId('defect-mouse-only').focus();
   await page.keyboard.press('Enter');
@@ -340,7 +305,7 @@ test('persistent initial render failure caps retries and returns safely to menu'
   await expect(page.getByTestId('error-retry-button')).toBeDisabled();
   await page.getByTestId('error-menu-button').focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('heading', { name: 'Welcome to KeyQuest' })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'The apothecary has gone dark' })).toBeFocused();
   await expect(page.getByTestId('start-challenge')).toBeVisible();
 });
 

@@ -112,7 +112,9 @@
   min-height: 76px;
 }
 
-.card:hover {
+/* :not(:disabled) matches the specificity of the global button:hover rule,
+   which otherwise paints cards crimson and fails text contrast on hover. */
+.card:hover:not(:disabled) {
   background-color: var(--color-surface-elevated);
   border-color: var(--color-warning);
 }

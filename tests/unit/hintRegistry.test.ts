@@ -19,12 +19,16 @@ import {
 import { createInitialProgressState } from '../../src/context/GameContext';
 import type { DefectState, DefectType } from '../../src/types';
 
-const ALL_DEFECT_TYPES: DefectType[] = [
+/** Checkout curses: DEFECT_ORDER is the Checkout's canonical hint order. */
+const CHECKOUT_DEFECT_TYPES: DefectType[] = [
   'invisible-focus',
   'mouse-only-activation',
   'missing-accessible-name',
   'insufficient-contrast',
 ];
+
+/** Every curse across built rooms (Checkout + Pantry). */
+const ALL_DEFECT_TYPES: DefectType[] = [...CHECKOUT_DEFECT_TYPES, 'color-only-ingredients'];
 
 function makeDefectState(
   type: DefectType,
@@ -44,8 +48,8 @@ function makeDefectState(
 }
 
 describe('HINT_REGISTRY', () => {
-  it('contains exactly three hints per defect type (12 total)', () => {
-    expect(HINT_REGISTRY).toHaveLength(12);
+  it('contains exactly three hints per defect type (15 total)', () => {
+    expect(HINT_REGISTRY).toHaveLength(15);
 
     for (const defectType of ALL_DEFECT_TYPES) {
       const hints = getHintsForDefect(defectType);
@@ -99,9 +103,16 @@ describe('HINT_REGISTRY', () => {
     }
   });
 
-  it('HINT_MAX_LEVEL is 3 and DEFECT_ORDER covers all defect types', () => {
+  it('HINT_MAX_LEVEL is 3 and DEFECT_ORDER covers the Checkout curses', () => {
     expect(HINT_MAX_LEVEL).toBe(3);
-    expect([...DEFECT_ORDER].sort()).toEqual([...ALL_DEFECT_TYPES].sort());
+    expect([...DEFECT_ORDER].sort()).toEqual([...CHECKOUT_DEFECT_TYPES].sort());
+  });
+
+  it('targets the Pantry curse when given the Pantry order', () => {
+    const progress = createInitialProgressState();
+    expect(selectHintTarget(progress.defects, ['color-only-ingredients'])).toBe(
+      'color-only-ingredients'
+    );
   });
 });
 

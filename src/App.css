@@ -10,6 +10,20 @@
   box-shadow: 0 0 0 5px rgba(125, 211, 252, 0.35);
 }
 
+/* Pantry shelf defect: jar labels are hidden, so color is the only cue and
+   the buttons have no accessible name. The label repair (RepairEngine) adds
+   .keyquest-labels-repaired to the shelf and reveals symbol + name. */
+.keyquest-ingredient-label {
+  display: none;
+}
+
+.keyquest-labels-repaired .keyquest-ingredient-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
 /* Override any inline outline:none for repaired elements */
 .keyquest-focus-repaired:focus {
   outline: 3px solid var(--color-focus, #7dd3fc) !important;

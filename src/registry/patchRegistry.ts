@@ -2,15 +2,20 @@
  * Patch Registry (Pick-the-Patch Mini-Puzzle)
  * Provides 3 realistic code candidates per accessibility curse (1 true WCAG fix
  * and 2 plausible anti-patterns) plus each curse's custom apothecary potion artwork.
+ * Patch labels are short player actions; exact code and WCAG detail are shown
+ * behind "How this repair works".
  */
 
-import type { DefectType } from '../types';
+import type { DefectType, RoomId } from '../types';
+import { ROOM_DEFECTS } from './roomsRegistry';
 
 export interface PatchOption {
   id: string;
+  /** Short player action, e.g. "Show a ring on keyboard focus". */
   label: string;
   code: string;
   isCorrect: boolean;
+  /** One plain sentence explaining why a trap patch does not work. */
   failureDiagnosis: string;
   mascotReaction: string;
 }
@@ -19,6 +24,14 @@ export interface CurseCatalogEntry {
   type: DefectType;
   name: string;
   curseAlias: string;
+  /** Plain-language title shown in the room, e.g. "Buy Now hides keyboard focus". */
+  roomTitle: string;
+  /** One sentence describing what the player experiences. */
+  symptom: string;
+  /** What the verified repair changed, in the player's terms. */
+  fixedSummary: string;
+  /** What the player can do with the repaired control next. */
+  nextAction: string;
   wcagCriterion: string;
   wcagCode: string;
   wcagLevel: 'A' | 'AA';
@@ -39,6 +52,11 @@ export const CURSE_CATALOG: readonly CurseCatalogEntry[] = [
     type: 'mouse-only-activation',
     name: 'Mouse-Only Activation',
     curseAlias: 'Chained Keycap Hex',
+    roomTitle: 'Add to Cart ignores the keyboard',
+    symptom:
+      'Tab reaches Add to Cart, but Enter and Space do nothing. Only a mouse or tap works.',
+    fixedSummary: 'Enter and Space now press Add to Cart, and it is announced as a button.',
+    nextAction: 'Press Enter on Add to Cart to put the candle in the order.',
     wcagCriterion: 'WCAG 2.1.1 Keyboard',
     wcagCode: 'WCAG 2.1.1',
     wcagLevel: 'A',
@@ -58,27 +76,27 @@ export const CURSE_CATALOG: readonly CurseCatalogEntry[] = [
     patches: [
       {
         id: 'mouse-trap-cursor',
-        label: 'Add cursor: pointer & onMouseDown',
+        label: 'Show a pointer cursor',
         code: '<div tabindex="0" style="cursor: pointer" onMouseDown={addToCart}>',
         isCorrect: false,
         failureDiagnosis:
-          'Verification failed: CSS cursor styles and onMouseDown still ignore keyboard Enter and Space events, and expose no button role.',
+          'A pointer cursor and onMouseDown only help mouse users. Enter and Space still do nothing.',
         mascotReaction:
           'Ooh, that only helps mouse pointers — keyboard Enter & Space still bounce right off!',
       },
       {
         id: 'mouse-trap-tabindex',
-        label: 'Set tabindex="-1" to skip it',
+        label: 'Skip it in the Tab order',
         code: '<div tabindex="-1" onClick={addToCart}>Add to Cart</div>',
         isCorrect: false,
         failureDiagnosis:
-          'Verification failed: tabindex="-1" removes the control from the Tab order completely, locking keyboard users out of adding items.',
+          'tabindex="-1" removes Add to Cart from the Tab order, so keyboard users cannot reach it at all.',
         mascotReaction:
           'Yikes! Hiding it from Tab traps shoppers out of the cart even worse!',
       },
       {
         id: 'mouse-fix',
-        label: 'Add role="button" + Enter/Space handler',
+        label: 'Make Enter and Space press it',
         code: '<div role="button" tabindex="0" onKeyDown={onEnterOrSpace}>',
         isCorrect: true,
         failureDiagnosis: '',
@@ -91,6 +109,11 @@ export const CURSE_CATALOG: readonly CurseCatalogEntry[] = [
     type: 'invisible-focus',
     name: 'Invisible Focus',
     curseAlias: 'Vanishing Halo Hex',
+    roomTitle: 'Buy Now hides keyboard focus',
+    symptom:
+      'Tab lands on Buy Now, but nothing shows it. Keyboard shoppers lose their place.',
+    fixedSummary: 'Buy Now now shows a 3px ring when it has keyboard focus.',
+    nextAction: 'Press Buy Now to light the lantern.',
     wcagCriterion: 'WCAG 2.4.7 Focus Visible',
     wcagCode: 'WCAG 2.4.7',
     wcagLevel: 'AA',
@@ -110,32 +133,32 @@ export const CURSE_CATALOG: readonly CurseCatalogEntry[] = [
     patches: [
       {
         id: 'focus-trap-hover',
-        label: 'Style :hover glow only',
+        label: 'Glow when the mouse hovers',
         code: '.buyButton:hover { box-shadow: 0 0 12px #fbbf24; }',
         isCorrect: false,
         failureDiagnosis:
-          'Verification failed: :hover only responds to a mouse pointer. When focused via Tab, computed outlineStyle is still "none".',
+          ':hover only reacts to a mouse pointer. Tab focus still shows nothing.',
         mascotReaction:
           'Careful! :hover never fires when navigating with the Tab key!',
       },
       {
-        id: 'focus-trap-transparent',
-        label: 'Use outline: 2px solid transparent',
-        code: '.buyButton:focus { outline: 2px solid transparent; }',
-        isCorrect: false,
-        failureDiagnosis:
-          'Verification failed: A transparent outline is invisible on standard displays and fails WCAG 2.4.7 Focus Visible.',
-        mascotReaction:
-          'Sneaky ghost ring! A transparent outline is still invisible to keyboard users!',
-      },
-      {
         id: 'focus-fix',
-        label: 'Restore high-contrast :focus-visible outline',
+        label: 'Show a ring on keyboard focus',
         code: '.keyquest-focus-repaired:focus-visible { outline: 3px solid #7dd3fc; outline-offset: 2px; }',
         isCorrect: true,
         failureDiagnosis: '',
         mascotReaction:
           'Boom! That glowing focus halo lights up the button crystal clear!',
+      },
+      {
+        id: 'focus-trap-transparent',
+        label: 'Add a see-through outline',
+        code: '.buyButton:focus { outline: 2px solid transparent; }',
+        isCorrect: false,
+        failureDiagnosis:
+          'A transparent outline is still invisible, so focus stays hidden.',
+        mascotReaction:
+          'Sneaky ghost ring! A transparent outline is still invisible to keyboard users!',
       },
     ],
   },
@@ -143,6 +166,11 @@ export const CURSE_CATALOG: readonly CurseCatalogEntry[] = [
     type: 'missing-accessible-name',
     name: 'Missing Accessible Name',
     curseAlias: 'Voiceless Cart Hex',
+    roomTitle: 'The bag button has no name',
+    symptom:
+      'The bag icon button is announced only as “button”. Screen reader shoppers cannot tell what it does.',
+    fixedSummary: 'The bag button is now announced as “View shopping cart, button”.',
+    nextAction: 'Press the bag button to check what is in the order.',
     wcagCriterion: 'WCAG 4.1.2 Name, Role, Value',
     wcagCode: 'WCAG 4.1.2',
     wcagLevel: 'A',
@@ -161,33 +189,33 @@ export const CURSE_CATALOG: readonly CurseCatalogEntry[] = [
     repairTestId: 'repair-missing-name',
     patches: [
       {
-        id: 'name-trap-data',
-        label: 'Add data-label="Cart" attribute',
-        code: '<button type="button" data-label="View shopping cart">',
-        isCorrect: false,
-        failureDiagnosis:
-          'Verification failed: Custom data-* attributes are ignored by the browser Accessibility Tree — computedName remains empty.',
-        mascotReaction:
-          'Hmm, screen readers can’t read custom data-* attributes — it still announces as blank!',
-      },
-      {
-        id: 'name-trap-placeholder',
-        label: 'Add aria-hidden="false" on empty span',
-        code: '<button type="button"><span aria-hidden="false"></span></button>',
-        isCorrect: false,
-        failureDiagnosis:
-          'Verification failed: Exposing an empty icon element provides no readable text for screen readers or voice control.',
-        mascotReaction:
-          'Still silent! There has to be real descriptive text or an aria-label!',
-      },
-      {
         id: 'name-fix',
-        label: 'Add aria-label="View shopping cart"',
+        label: 'Label it “View shopping cart”',
         code: '<button type="button" aria-label="View shopping cart">',
         isCorrect: true,
         failureDiagnosis: '',
         mascotReaction:
           'Loud and clear! Screen readers now announce "View shopping cart, button"!',
+      },
+      {
+        id: 'name-trap-data',
+        label: 'Add a data-label note',
+        code: '<button type="button" data-label="View shopping cart">',
+        isCorrect: false,
+        failureDiagnosis:
+          'Browsers ignore data-* attributes when naming controls, so the button is still nameless.',
+        mascotReaction:
+          'Hmm, screen readers can’t read custom data-* attributes — it still announces as blank!',
+      },
+      {
+        id: 'name-trap-placeholder',
+        label: 'Expose the empty icon span',
+        code: '<button type="button"><span aria-hidden="false"></span></button>',
+        isCorrect: false,
+        failureDiagnosis:
+          'An empty span has no text to read, so the button is still nameless.',
+        mascotReaction:
+          'Still silent! There has to be real descriptive text or an aria-label!',
       },
     ],
   },
@@ -195,6 +223,11 @@ export const CURSE_CATALOG: readonly CurseCatalogEntry[] = [
     type: 'insufficient-contrast',
     name: 'Insufficient Contrast',
     curseAlias: 'Shadow Ink Hex',
+    roomTitle: 'The price is too faint to read',
+    symptom:
+      'The $13.99 price is dim gray on dark plum, about 2:1 contrast. Low-vision shoppers cannot read it.',
+    fixedSummary: 'The price is now light gray with more than 10:1 contrast.',
+    nextAction: 'Check the order total. The price is easy to read now.',
     wcagCriterion: 'WCAG 1.4.3 Contrast (Minimum)',
     wcagCode: 'WCAG 1.4.3',
     wcagLevel: 'AA',
@@ -214,32 +247,86 @@ export const CURSE_CATALOG: readonly CurseCatalogEntry[] = [
     patches: [
       {
         id: 'contrast-trap-dim',
-        label: 'Nudge slightly lighter (#666666)',
+        label: 'Lighten the price a little',
         code: '.productPrice { color: #666666; /* ~2.7:1 — Still fails */ }',
         isCorrect: false,
         failureDiagnosis:
-          'Verification failed: #666666 against #231936 only reaches ~2.7:1 luminance contrast — still below WCAG AA.',
+          '#666666 on the plum counter only reaches about 2.7:1, still below the 4.5:1 minimum.',
         mascotReaction:
           'Still way too murky! Even with cat eyes, ~2.7:1 fails WCAG AA!',
       },
       {
-        id: 'contrast-trap-shadow',
-        label: 'Add subtle dark text-shadow only',
-        code: '.productPrice { color: #555555; text-shadow: 0 1px 2px #000; }',
-        isCorrect: false,
-        failureDiagnosis:
-          'Verification failed: A dark shadow behind dark text does not raise foreground-to-background luminance contrast.',
-        mascotReaction:
-          'Shadows on shadows! We need a bright, high-contrast foreground color!',
-      },
-      {
         id: 'contrast-fix',
-        label: 'Switch to crisp luminous #e0e0e0',
+        label: 'Brighten the price to light gray',
         code: '.productPrice { color: #e0e0e0; /* > 10:1 — WCAG AA Pass */ }',
         isCorrect: true,
         failureDiagnosis: '',
         mascotReaction:
           'Sparkling clear! That price pops off the counter with >10:1 contrast!',
+      },
+      {
+        id: 'contrast-trap-shadow',
+        label: 'Add a dark text shadow',
+        code: '.productPrice { color: #555555; text-shadow: 0 1px 2px #000; }',
+        isCorrect: false,
+        failureDiagnosis:
+          'A dark shadow behind dark text does not make the text itself any brighter.',
+        mascotReaction:
+          'Shadows on shadows! We need a bright, high-contrast foreground color!',
+      },
+    ],
+  },
+  {
+    type: 'color-only-ingredients',
+    name: 'Color-Only Ingredients',
+    curseAlias: 'Faded Label Hex',
+    roomTitle: 'The shelf shows colors only',
+    symptom:
+      'Each jar is a colored swatch with no name or symbol. The recipe names ingredients, so anyone who cannot tell these colors apart, or uses a screen reader, cannot pick the right jar.',
+    fixedSummary: 'Every jar now shows its name and symbol, and the name is what screen readers announce.',
+    nextAction: 'Add Moonpetal, Ember salt, and Glowcap to the cauldron, in that order.',
+    wcagCriterion: 'WCAG 1.4.1 Use of Color',
+    wcagCode: 'WCAG 1.4.1',
+    wcagLevel: 'A',
+    potionArtUrl: '/art/curse-name.png',
+    targetElement: 'Ingredient jars on the pantry shelf (<button>)',
+    description:
+      'The ingredient buttons are told apart by color alone: each label and symbol is hidden, so the buttons have no visible text and no accessible name. WCAG 1.4.1 forbids color as the only way to convey information, and 4.1.2 requires a name.',
+    brokenCode: '.jarLabel { display: none; } /* swatch color is the only cue */',
+    repairedCode:
+      '.keyquest-labels-repaired .jarLabel { display: inline-flex; } /* symbol + name, name is the button text */',
+    defaultEducationalFeedback:
+      'Repair applied: every jar shows a symbol and its name. The visible name is the button text, so it is also the accessible name (WCAG 2.5.3 Label in Name), and color is no longer the only cue (WCAG 1.4.1).',
+    defaultVerificationEvidence:
+      'Label check: every ingredient button has a visible label, and its accessible name contains that label.',
+    testId: 'defect-color-only',
+    repairTestId: 'repair-color-only',
+    patches: [
+      {
+        id: 'color-trap-brighter',
+        label: 'Make the colors brighter',
+        code: '.jar { filter: saturate(1.8); }',
+        isCorrect: false,
+        failureDiagnosis:
+          'Brighter colors are still colors only. Players who cannot tell them apart, and screen readers, still get no name.',
+        mascotReaction: 'Shinier, but still nameless! A screen reader hears “button, button, button”.',
+      },
+      {
+        id: 'color-trap-title',
+        label: 'Add a tooltip on hover',
+        code: '<button title="Moonpetal">',
+        isCorrect: false,
+        failureDiagnosis:
+          'A title tooltip only appears on mouse hover. Touch and keyboard players never see it, and the jar still looks unlabeled.',
+        mascotReaction: 'Hover-only hints vanish for keyboards and touchscreens!',
+      },
+      {
+        id: 'color-fix',
+        label: 'Show a name and symbol on each jar',
+        code: '<button><span aria-hidden="true">☾</span> Moonpetal</button>',
+        isCorrect: true,
+        failureDiagnosis: '',
+        mascotReaction: 'Now every jar says what it is, in words and symbols!',
       },
     ],
   },
@@ -249,4 +336,9 @@ export function getCurseByType(type: DefectType): CurseCatalogEntry {
   return (
     CURSE_CATALOG.find((entry) => entry.type === type) ?? CURSE_CATALOG[0]!
   );
+}
+
+/** The curses of one room, in that room's canonical order. */
+export function getRoomCurses(room: RoomId): CurseCatalogEntry[] {
+  return ROOM_DEFECTS[room].map(getCurseByType);
 }

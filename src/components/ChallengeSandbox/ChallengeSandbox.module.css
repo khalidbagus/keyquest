@@ -15,11 +15,12 @@
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-md);
-  padding: var(--space-3) var(--space-4);
-  box-shadow: var(--shadow-sm);
+  padding: var(--space-2) var(--space-3);
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
 }
 
 .gadgetHeader {
@@ -45,6 +46,7 @@
 }
 
 .modeGroup {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -56,6 +58,8 @@
 }
 
 .modeButton {
+  flex: 1 1 auto;
+  justify-content: center;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -69,7 +73,7 @@
   font-weight: 700;
 }
 
-.modeButton:hover {
+.modeButton:hover:not(:disabled) {
   background-color: var(--color-surface);
   color: var(--color-text);
 }
@@ -80,11 +84,12 @@
   border-color: var(--color-warning);
 }
 
-.modeButtonActive:hover {
+.modeButtonActive:hover:not(:disabled) {
   background-color: var(--color-secondary-hover);
 }
 
 .gadgetHint {
+  flex: 1 1 100%;
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
@@ -96,7 +101,7 @@
   background-color: #140d21;
   border: 2px dashed var(--color-warning);
   border-radius: var(--border-radius-lg);
-  padding: var(--space-5);
+  padding: var(--space-4);
   position: relative;
   box-shadow: var(--shadow-md);
 }
@@ -151,19 +156,19 @@
 }
 
 .disclaimer {
+  flex: 1 1 260px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: var(--space-2);
   background-color: #261d14;
   border: 1px solid var(--color-warning);
   border-radius: var(--border-radius-sm);
   padding: var(--space-2) var(--space-3);
-  margin-bottom: var(--space-4);
   color: var(--color-warning);
   font-size: var(--font-size-xs);
   font-weight: 600;
-  text-align: center;
+  text-align: left;
 }
 
 .disclaimerIcon {
@@ -172,6 +177,46 @@
 
 @media (max-width: 640px) {
   .sandbox {
-    padding: var(--space-4);
+    padding: var(--space-3);
+  }
+
+  .modeGroup {
+    flex: 1 1 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .modeButton {
+    padding: var(--space-1);
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .modeButton svg {
+    display: none;
+  }
+
+  /* Duplicate of the room candles; the disclaimer gets the full width. */
+  .curseBadgeActive,
+  .curseBadgeCleared {
+    display: none;
+  }
+
+  .containmentBar {
+    margin-bottom: var(--space-2);
+  }
+}
+
+@media (max-width: 640px) {
+  .gadgetHintNormal {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 }

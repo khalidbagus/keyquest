@@ -10,10 +10,11 @@ import { useGame } from '../context/GameContext';
 import { useMascot } from '../context/MascotContext';
 import { RiveMascot } from '../components/RiveMascot';
 import { CostumeLockerModal } from '../components/CostumeLocker';
-import { CostumeMaskIcon } from '../components/Icons/ApothecaryIcons';
-import { resetAllRepairs } from '../engines/RepairEngine';
+import { CostumeMaskIcon, KeyCrestIcon } from '../components/Icons/ApothecaryIcons';
 import { getCurseByType } from '../registry/patchRegistry';
-import type { DefectType } from '../types';
+import type { DefectType, RoomId } from '../types';
+import { ROOM_DEFECTS, isRoomUnlocked } from '../registry/roomsRegistry';
+import { LanternPotion } from '../components/PotionPantry/PantryProps';
 import styles from './CompletionView.module.css';
 
 interface WcagSummaryDetail {
@@ -61,33 +62,90 @@ const WCAG_INFO: Record<string, WcagSummaryDetail> = {
     impact:
       'People with low vision or color vision deficiencies can read pricing effortlessly.',
   },
+  'color-only-ingredients': {
+    criterion: '1.4.1',
+    level: 'A',
+    name: 'Use of Color',
+    remedy: 'Revealed a symbol and a visible name on every ingredient jar; the name is the button text.',
+    impact:
+      'Players who cannot tell the colors apart, and screen reader users, can pick the right ingredient.',
+  },
+};
+
+interface RoomCompletionCopy {
+  badge: string;
+  title: string;
+  subtitle: (ghost: string) => string;
+  announcement: string;
+  nextTitle: string;
+  nextDetail: string;
+  nextState: string;
+}
+
+const ROOM_COPY: Record<RoomId, RoomCompletionCopy> = {
+  checkout: {
+    badge: 'ROOM 1 CLEARED · MIDNIGHT CHECKOUT',
+    title: 'You earned the Pantry Key',
+    subtitle: (ghost) =>
+      `You and ${ghost} relit the counter lantern and rang up the shopper’s order. Every repair was checked on the live page.`,
+    announcement:
+      'Midnight Checkout cleared. You earned the Pantry Key. All four accessibility defects were repaired and verified.',
+    nextTitle: 'Next door: Potion Pantry',
+    nextDetail: 'Brew a lantern potion from a three-ingredient recipe. Your key opens it now.',
+    nextState: 'Open',
+  },
+  pantry: {
+    badge: 'ROOM 2 CLEARED · POTION PANTRY',
+    title: 'You brewed the lantern potion',
+    subtitle: (ghost) =>
+      `You and ${ghost} labelled the shelf and brewed a lantern potion. The repair was checked on the live page.`,
+    announcement:
+      'Potion Pantry cleared. You brewed the lantern potion. The ingredient labels were repaired and verified.',
+    nextTitle: 'Next door: Clocktower Gate',
+    nextDetail: 'Ring three bells in order to bring the lights back. This door opens in a later update.',
+    nextState: 'Coming later',
+  },
+  clocktower: {
+    badge: 'ROOM 3 CLEARED',
+    title: 'The bells ring again',
+    subtitle: (ghost) => `You and ${ghost} rang the clocktower bells.`,
+    announcement: 'Clocktower Gate cleared.',
+    nextTitle: 'The apothecary is lit',
+    nextDetail: '',
+    nextState: 'Done',
+  },
 };
 
 export function CompletionView() {
   const { state, dispatch, progress } = useGame();
   const { companion, companionSignal, triggerCompanion } = useMascot();
   const announceRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const costumeButtonRef = useRef<HTMLButtonElement>(null);
   const [lockerOpen, setLockerOpen] = useState(false);
 
   const summary = state.phase === 'completion' ? state.summary : null;
+  const roomId: RoomId = summary?.roomId ?? 'checkout';
+  const copy = ROOM_COPY[roomId];
 
   useEffect(() => {
+    titleRef.current?.focus();
     if (announceRef.current) {
-      announceRef.current.textContent =
-        'Congratulations! You have completed the KeyQuest challenge. All four accessibility defects have been repaired and verified.';
+      announceRef.current.textContent = copy.announcement;
     }
-  }, []);
+  }, [copy.announcement]);
 
-  function handleReplay() {
-    resetAllRepairs();
-    dispatch({ type: 'RESET_CHALLENGE' });
-    dispatch({ type: 'START_CHALLENGE' });
+  function handleOpenPantry() {
+    dispatch({ type: 'ENTER_ROOM', roomId: 'pantry' });
   }
 
+  function handleDoors() {
+    dispatch({ type: 'OPEN_DOORS' });
+  }
+
+  // Progress stays saved; the menu offers Resume.
   function handleReturnToMenu() {
-    resetAllRepairs();
-    dispatch({ type: 'RESET_CHALLENGE' });
+    dispatch({ type: 'EMERGENCY_EXIT' });
   }
 
   function handleEncore() {
@@ -103,17 +161,16 @@ export function CompletionView() {
 
   if (!summary) return null;
 
-  const totalHints = Object.values(progress.hintsUsed).reduce(
-    (a, b) => a + b,
-    0
-  );
+  const roomTypes = ROOM_DEFECTS[roomId];
+  const totalHints = roomTypes.reduce((sum, t) => sum + progress.hintsUsed[t], 0);
+  const pantryOpen = roomId === 'checkout' && isRoomUnlocked(progress, 'pantry');
 
   return (
     <div className={styles.container}>
       {/* Screen reader announcement */}
       <div
         ref={announceRef}
-        aria-live="assertive"
+        aria-live="polite"
         className="visually-hidden"
       />
 
@@ -148,15 +205,23 @@ export function CompletionView() {
             </div>
           </div>
 
-          <span className={styles.escapeBadge}>
-            CURSE LIFTED · SANCTUARY UNLOCKED
+          <span className={styles.escapeBadge}>{copy.badge}</span>
+          <h2 ref={titleRef} tabIndex={-1} className={styles.title}>
+            {copy.title}
+          </h2>
+          <p className={styles.subtitle}>{copy.subtitle(companion.name)}</p>
+        </div>
+
+        {/* What the key opens */}
+        <div className={styles.keyReward} data-testid="next-door">
+          <span className={styles.keyIcon} aria-hidden="true">
+            {roomId === 'pantry' ? <LanternPotion /> : <KeyCrestIcon size={40} />}
           </span>
-          <h2 className={styles.title}>Challenge Complete!</h2>
-          <p className={styles.subtitle}>
-            You and <strong>{companion.name}</strong> purified the Midnight
-            Checkout! Every intentional defect was repaired in the live DOM and
-            verified through real browser inspection.
-          </p>
+          <div className={styles.keyText}>
+            <p className={styles.keyTitle}>{copy.nextTitle}</p>
+            <p className={styles.keyDetail}>{copy.nextDetail}</p>
+          </div>
+          <span className={styles.doorState}>{copy.nextState}</span>
         </div>
 
         {/* Repaired defects summary with Purified Curse Potion Trophies */}
@@ -223,7 +288,7 @@ export function CompletionView() {
             <div className={styles.stat}>
               <span className={styles.statLabel}>DOM Checks Verified</span>
               <span className={styles.statValue}>
-                {summary.defectsRepaired.length} / 4
+                {summary.defectsRepaired.length} / {roomTypes.length}
               </span>
             </div>
           </div>
@@ -231,12 +296,23 @@ export function CompletionView() {
 
         {/* Actions */}
         <div className={styles.actions}>
+          {pantryOpen ? (
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={handleOpenPantry}
+              data-testid="open-pantry"
+            >
+              Open the Pantry door
+            </button>
+          ) : null}
           <button
             type="button"
-            className={styles.primaryButton}
-            onClick={handleReplay}
+            className={pantryOpen ? styles.secondaryButton : styles.primaryButton}
+            onClick={handleDoors}
+            data-testid="completion-doors"
           >
-            Play Again
+            Back to the doors
           </button>
           <button
             type="button"

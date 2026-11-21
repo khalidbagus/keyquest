@@ -17,6 +17,26 @@ export function checkSavedProgress(): ProgressState | null {
 }
 
 /**
+ * A valid save worth resuming: at least one discovery, repair, or room
+ * action. Finished adventures resume at the door selector.
+ */
+export function getMeaningfulSavedProgress(): ProgressState | null {
+  const progress = checkSavedProgress();
+  return progress && hasMeaningfulProgress(progress) ? progress : null;
+}
+
+/** Any discovery, repair, or room action worth resuming (any room). */
+export function hasMeaningfulProgress(progress: ProgressState): boolean {
+  const hasDefectProgress = Object.values(progress.defects).some(
+    (d) => d.discovered || d.repaired
+  );
+  const hasCheckoutProgress = Object.values(progress.checkout).some(Boolean);
+  const hasPantryProgress =
+    progress.pantry.cauldron.length > 0 || progress.pantry.brewed;
+  return hasDefectProgress || hasCheckoutProgress || hasPantryProgress;
+}
+
+/**
  * Clear saved progress without resetting game state
  */
 export function clearSavedProgress(): void {

@@ -1,20 +1,23 @@
 /**
- * Repair Studio Component (v2 Pick-the-Patch Apothecary Workbench)
- * Interactive inspector with 4 illustrated Curse Potions, 3-choice Pick-the-Patch
- * puzzles (firing live mascot reactFailure / celebrate triggers), and live DOM verification.
+ * Repair Studio Component (Adventure Room 1)
+ * Shows the repair for the curse the player just found, as short patch
+ * actions. The correct patch runs the real RepairEngine and VerificationEngine
+ * on the live sandbox element. Exact code, WCAG reference, and evidence sit
+ * behind "How this repair works".
  * Requirements: 4.4, 5.4, 6.4, 7.4, 8.1-8.6
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGame } from '../../context/GameContext';
 import { useMascot } from '../../context/MascotContext';
-import { applyRepair, type RepairResult } from '../../engines/RepairEngine';
+import { applyRepair } from '../../engines/RepairEngine';
 import { verify } from '../../engines/VerificationEngine';
 import {
-  CURSE_CATALOG,
+  getCurseByType,
   type CurseCatalogEntry,
   type PatchOption,
 } from '../../registry/patchRegistry';
+import { getRepairNextAction } from '../../registry/roomRegistry';
 import { WrenchSparkIcon } from '../Icons/ApothecaryIcons';
 import type { DefectType, VerificationResult } from '../../types';
 import styles from './RepairStudio.module.css';
@@ -31,371 +34,395 @@ function formatVerificationDetails(
   switch (details.type) {
     case 'focus':
       return passed
-        ? `Computed Style Check: outline "${details.outlineWidth} ${details.outlineStyle} ${details.outlineColor}" — visible focus indicator confirmed.`
-        : `Computed Style Check: outline "${details.outlineWidth} ${details.outlineStyle}" — visible focus indicator not detected.`;
+        ? `Computed style check: outline "${details.outlineWidth} ${details.outlineStyle} ${details.outlineColor}". Visible focus indicator confirmed.`
+        : `Computed style check: outline "${details.outlineWidth} ${details.outlineStyle}". No visible focus indicator detected.`;
     case 'keyboard':
-      return `DOM Event Check: Enter key (${details.enterKeyWorks ? 'Pass' : 'Fail'}), Space key (${details.spaceKeyWorks ? 'Pass' : 'Fail'}) — ${
-        passed ? 'keyboard activation confirmed.' : 'keyboard activation incomplete.'
-      }`;
+      return `DOM event check: Enter key ${details.enterKeyWorks ? 'passed' : 'failed'}, Space key ${details.spaceKeyWorks ? 'passed' : 'failed'}.`;
     case 'accessible-name':
       return passed
-        ? `Accessibility Tree Check: computedName="${details.computedName}" (source: ${details.nameSource}).`
-        : 'Accessibility Tree Check: computedName is empty — accessible name not detected.';
+        ? `Accessibility tree check: computed name "${details.computedName}" (source: ${details.nameSource}).`
+        : 'Accessibility tree check: computed name is empty.';
     case 'contrast':
-      return `Luminance Contrast Check: ${details.contrastRatio}:1 measured (required ≥ ${details.requiredRatio}:1) — ${
-        passed ? 'meets WCAG AA.' : 'below WCAG AA threshold.'
-      }`;
+      return `Luminance check: ${details.contrastRatio}:1 measured, at least ${details.requiredRatio}:1 required.`;
+    case 'labels':
+      return passed
+        ? `Label check: ${details.labelled} of ${details.total} jars show a visible name that is also their accessible name.`
+        : `Label check: ${details.labelled} of ${details.total} jars labelled. Missing: ${details.failing.join(', ') || 'all'}.`;
     default:
       return defect.defaultVerificationEvidence;
   }
 }
 
-export function RepairStudio() {
+/**
+ * The repaired control the player uses next. Contrast has no control, so its
+ * result panel takes focus instead. The pantry shelf hands focus to its first jar.
+ */
+const PAYOFF_FOCUS: Partial<Record<DefectType, (target: HTMLElement) => HTMLElement | null>> = {
+  'invisible-focus': (el) => el,
+  'mouse-only-activation': (el) => el,
+  'missing-accessible-name': (el) => el,
+  'color-only-ingredients': (el) => el.querySelector<HTMLElement>('[data-ingredient]'),
+};
+
+interface RepairStudioProps {
+  /** Curses in this room, in canonical order. */
+  roomTypes: readonly DefectType[];
+  /** Curse currently shown. Null when nothing has been found yet. */
+  activeType: DefectType | null;
+  onSelect: (type: DefectType) => void;
+  /** Increment to move focus to the active repair's heading. */
+  focusRequest?: number;
+  /** Called once a repair passes its live check. */
+  onVerified?: (type: DefectType) => void;
+}
+
+export function RepairStudio({
+  roomTypes,
+  activeType,
+  onSelect,
+  focusRequest = 0,
+  onVerified,
+}: RepairStudioProps) {
   const { progress, dispatch } = useGame();
   const { companion, triggerCompanion } = useMascot();
   const [announcement, setAnnouncement] = useState('');
-  const feedbackRefs = useRef<
-    Partial<Record<DefectType, HTMLDivElement | null>>
-  >({});
+  const [checking, setChecking] = useState<DefectType | null>(null);
+  const checkingRef = useRef(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+  const retryRef = useRef<HTMLButtonElement>(null);
+  const handledFocusRequest = useRef(focusRequest);
+  const failedChecksRef = useRef<Partial<Record<DefectType, number>>>({});
 
   const [trapFeedback, setTrapFeedback] = useState<
     Partial<Record<DefectType, PatchOption | null>>
   >({});
-
-  const [repairResults, setRepairResults] = useState<
-    Record<DefectType, RepairResult | null>
-  >({
-    'invisible-focus': null,
-    'mouse-only-activation': null,
-    'missing-accessible-name': null,
-    'insufficient-contrast': null,
-  });
-
+  const [triedPatches, setTriedPatches] = useState<
+    Partial<Record<DefectType, string[]>>
+  >({});
+  const [failedChecks, setFailedChecks] = useState<
+    Partial<Record<DefectType, number>>
+  >({});
   const [verificationResults, setVerificationResults] = useState<
-    Record<DefectType, VerificationResult | null>
-  >({
-    'invisible-focus': null,
-    'mouse-only-activation': null,
-    'missing-accessible-name': null,
-    'insufficient-contrast': null,
-  });
+    Partial<Record<DefectType, VerificationResult>>
+  >({});
 
-  const handlePatchAttempt = useCallback(
-    async (defect: CurseCatalogEntry, patch: PatchOption) => {
-      if (!patch.isCorrect) {
-        setTrapFeedback((prev) => ({ ...prev, [defect.type]: patch }));
-        setAnnouncement(
-          `Patch rejected for ${defect.name}: ${patch.failureDiagnosis}`
-        );
-        triggerCompanion('reactFailure', patch.mascotReaction, 'warning');
-        return;
-      }
+  useEffect(() => {
+    if (focusRequest === handledFocusRequest.current) return;
+    handledFocusRequest.current = focusRequest;
+    // Bring the whole repair card into view (not just its heading) so on a
+    // phone the patch choices show together with the counter just above.
+    headingRef.current?.focus({ preventScroll: true });
+    cardRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [focusRequest]);
 
-      setTrapFeedback((prev) => ({ ...prev, [defect.type]: null }));
+  const runRepairAndCheck = useCallback(
+    async (defect: CurseCatalogEntry, patch: PatchOption | null) => {
+      // Ignore repeat presses while a live check is running.
+      if (checkingRef.current) return;
 
-      const element = document.querySelector(
+      const element = document.querySelector<HTMLElement>(
         `[data-testid="${defect.testId}"]`
-      ) as HTMLElement | null;
-
+      );
       if (!element) {
         console.error(`Could not find element with testId: ${defect.testId}`);
         return;
       }
 
-      // Apply the real DOM/CSS repair
-      const result = applyRepair(defect.type, element);
-      setRepairResults((prev) => ({
-        ...prev,
-        [defect.type]: result,
-      }));
+      checkingRef.current = true;
+      setChecking(defect.type);
+      setTrapFeedback((prev) => ({ ...prev, [defect.type]: null }));
 
-      if (result.success) {
+      try {
+        const result = applyRepair(defect.type, element);
+        if (!result.success) return;
         dispatch({ type: 'APPLY_REPAIR', defectType: defect.type });
 
-        // Verify the repair against live DOM & computed styles
-        const verificationResult = await verify(defect.type, element);
+        const verification = await verify(defect.type, element);
         setVerificationResults((prev) => ({
           ...prev,
-          [defect.type]: verificationResult,
+          [defect.type]: verification,
         }));
-        dispatch({ type: 'VERIFICATION_RESULT', result: verificationResult });
+        dispatch({ type: 'VERIFICATION_RESULT', result: verification });
 
-        if (verificationResult.passed) {
-          setAnnouncement(
-            `${defect.name} repaired and verified. ${result.message}`
-          );
+        if (verification.passed) {
+          // The room status announces the fix next to the objective, so the
+          // studio stays quiet here to avoid a double announcement.
+          if (onVerified) {
+            setAnnouncement('');
+            onVerified(defect.type);
+          } else {
+            setAnnouncement(`Verified: ${defect.fixedSummary} ${defect.nextAction}`);
+          }
           triggerCompanion(
             'celebrate',
-            `${patch.mascotReaction} (${companion.signatureAction}!)`,
+            patch
+              ? `${patch.mascotReaction} (${companion.signatureAction}!)`
+              : `That did it! ${companion.signatureAction}!`,
             'celebrate'
           );
         } else {
+          // Count failed checks so a repeat failure reads (and announces) as new.
+          const attempts = (failedChecksRef.current[defect.type] ?? 0) + 1;
+          failedChecksRef.current[defect.type] = attempts;
+          setFailedChecks((prev) => ({ ...prev, [defect.type]: attempts }));
           setAnnouncement(
-            `${defect.name} repair applied, but verification is incomplete.`
+            `Check ${attempts} did not pass for ${defect.roomTitle}. Use Check again.`
           );
           triggerCompanion(
             'reactFailure',
-            `Hmm — ${defect.name} was patched, but live DOM verification did not pass yet.`,
+            'The patch went on, but the live check did not pass yet. Try Check again.',
             'warning'
           );
         }
 
         requestAnimationFrame(() => {
-          const feedbackEl = feedbackRefs.current[defect.type];
-          if (feedbackEl?.isConnected) {
-            feedbackEl.focus({ preventScroll: true });
+          const payoff = verification.passed ? PAYOFF_FOCUS[defect.type]?.(element) : null;
+          if (payoff) {
+            // Payoff: land on the repaired control so the player can use it.
+            if (payoff.isConnected) payoff.focus();
+          } else if (verification.passed) {
+            resultRef.current?.focus({ preventScroll: true });
+          } else {
+            retryRef.current?.focus({ preventScroll: true });
           }
         });
+      } finally {
+        checkingRef.current = false;
+        setChecking(null);
       }
     },
-    [dispatch, triggerCompanion, companion.signatureAction]
+    [dispatch, triggerCompanion, companion.signatureAction, onVerified]
   );
 
-  const handleDiscover = useCallback(
-    (defect: CurseCatalogEntry) => {
-      dispatch({ type: 'DISCOVER_DEFECT', defectType: defect.type });
-      setAnnouncement(
-        `Discovered defect: ${defect.name} (${defect.wcagCriterion}). ${defect.description}`
-      );
-      triggerCompanion(
-        'greet',
-        `Aha! We uncovered ${defect.name} (${defect.wcagCode}). Pick the right patch to break this curse!`,
-        'neutral'
-      );
+  const handlePatchAttempt = useCallback(
+    (defect: CurseCatalogEntry, patch: PatchOption) => {
+      if (checkingRef.current) return;
+      if (!patch.isCorrect) {
+        setTrapFeedback((prev) => ({ ...prev, [defect.type]: patch }));
+        setTriedPatches((prev) => ({
+          ...prev,
+          [defect.type]: [...new Set([...(prev[defect.type] ?? []), patch.id])],
+        }));
+        setAnnouncement(
+          `That patch did not work. ${patch.failureDiagnosis} Try another patch.`
+        );
+        triggerCompanion('reactFailure', patch.mascotReaction, 'warning');
+        return;
+      }
+      void runRepairAndCheck(defect, patch);
     },
-    [dispatch, triggerCompanion]
+    [runRepairAndCheck, triggerCompanion]
   );
 
-  function getStatus(defect: CurseCatalogEntry): string {
-    const state = progress.defects[defect.type];
-    if (state.verified) return 'Verified ✓';
-    if (state.repaired) return '⟳ Repaired';
-    if (state.discovered) return '⚠ Discovered';
-    return '○ Hidden';
-  }
+  const verifiedCount = roomTypes.filter((t) => progress.defects[t].verified).length;
 
-  function getStatusClass(defect: CurseCatalogEntry): string {
-    const state = progress.defects[defect.type];
-    if (state.verified) return styles.statusVerified!;
-    if (state.repaired) return styles.statusRepaired!;
-    if (state.discovered) return styles.statusDiscovered!;
-    return styles.statusUndiscovered!;
-  }
+  const otherFound = roomTypes.filter(
+    (type) =>
+      type !== activeType &&
+      progress.defects[type].discovered &&
+      !progress.defects[type].verified
+  );
 
-  function getCardStateClass(defect: CurseCatalogEntry): string {
-    const state = progress.defects[defect.type];
-    if (state.verified) return styles.cardVerified!;
-    if (state.discovered) return styles.cardDiscovered!;
-    return '';
-  }
-
-  const verifiedCount = Object.values(progress.defects).filter(
-    (d) => d.verified
-  ).length;
+  const defect = activeType ? getCurseByType(activeType) : null;
+  const state = activeType ? progress.defects[activeType] : null;
+  const verification = activeType ? verificationResults[activeType] ?? null : null;
+  const lastTrap = activeType ? trapFeedback[activeType] ?? null : null;
+  const tried = activeType ? triedPatches[activeType] ?? [] : [];
+  const isChecking = checking !== null && checking === activeType;
 
   return (
-    <div className={styles.studio}>
-      <div
-        aria-live="polite"
-        aria-atomic="true"
-        className="visually-hidden"
-      >
+    <section
+      className={styles.studio}
+      aria-labelledby="repair-studio-title"
+      data-testid="repair-studio"
+    >
+      <div aria-live="polite" aria-atomic="true" className="visually-hidden">
         {announcement}
       </div>
 
       <div className={styles.studioHeader}>
-        <h3 className={styles.title}>
+        <h3 id="repair-studio-title" className={styles.title}>
           <WrenchSparkIcon size={20} className={styles.titleIcon} />
           Repair Studio
         </h3>
-        <span className={styles.studioCounter}>
-          {verifiedCount} / 4 Verified
-        </span>
+        <span className={styles.studioCounter}>{verifiedCount} of {roomTypes.length} fixed</span>
       </div>
 
-      <p className={styles.studioSubtitle}>
-        Discover each curse, compare the broken markup, and pick the accessible
-        patch to apply real DOM &amp; CSS repairs.
-      </p>
-
-      <div className={styles.cards}>
-        {CURSE_CATALOG.map((defect) => {
-          const state = progress.defects[defect.type];
-          const result = repairResults[defect.type];
-          const verification = verificationResults[defect.type];
-          const lastTrap = trapFeedback[defect.type];
-          const feedbackMessage =
-            result?.message ?? defect.defaultEducationalFeedback;
-
-          return (
-            <div
-              key={defect.type}
-              className={`${styles.card} ${getCardStateClass(defect)}`}
+      {!defect || !state || !state.discovered ? (
+        <p className={styles.emptyState} data-testid="repair-empty">
+          Inspect a control in the shop to find its curse. Its repair appears here.
+        </p>
+      ) : (
+        <div
+          ref={cardRef}
+          className={`${styles.card} ${state.verified ? styles.cardVerified : styles.cardDiscovered}`}
+          data-testid={`repair-card-${defect.type}`}
+        >
+          <div className={styles.cardHeader}>
+            <span
+              className={`${styles.potionBadge} ${state.verified ? styles.potionBadgePurified : ''}`}
+              aria-hidden="true"
             >
-              <div className={styles.cardHeader}>
-                <div className={styles.cardIdentity}>
-                  <span
-                    className={`${styles.potionBadge} ${
-                      state.verified ? styles.potionBadgePurified : ''
-                    }`}
-                    aria-hidden="true"
-                  >
-                    <img
-                      src={defect.potionArtUrl}
-                      alt=""
-                      className={styles.potionImg}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </span>
-                  <h4 className={styles.cardTitle}>{defect.name}</h4>
-                </div>
-                <span
-                  className={`${styles.statusBadge} ${getStatusClass(defect)}`}
-                >
-                  {getStatus(defect)}
-                </span>
-              </div>
+              <img
+                src={defect.potionArtUrl}
+                alt=""
+                className={styles.potionImg}
+                decoding="async"
+              />
+            </span>
+            <h4 ref={headingRef} tabIndex={-1} className={styles.cardTitle}>
+              {defect.roomTitle}
+            </h4>
+          </div>
 
-              {/* Target & WCAG Metadata Pills */}
-              <div className={styles.metaRow}>
-                <span className={styles.targetPill}>
-                  Target: <code>{defect.targetElement}</code>
-                </span>
-                <span className={styles.wcagPill}>
-                  {defect.wcagCriterion} ({defect.wcagLevel})
-                </span>
-              </div>
-
-              <p className={styles.cardDescription}>{defect.description}</p>
-
-              {/* Broken Code + Pick-the-Patch 3-Choice Workbench */}
-              {state.discovered && !state.repaired && (
-                <div className={styles.workbench}>
-                  <div className={styles.codeBlockBroken}>
-                    <span className={styles.codeLabelBroken}>
-                      ✕ Broken (Before)
-                    </span>
-                    <code className={styles.codeSnippet}>
-                      {defect.brokenCode}
-                    </code>
-                  </div>
-
-                  <p className={styles.pickPrompt}>
-                    Pick the accessible patch to cast:
-                  </p>
-
-                  <div className={styles.patchOptions}>
-                    {defect.patches.map((patch) => {
-                      const isRejected = lastTrap?.id === patch.id;
-                      return (
-                        <button
-                          key={patch.id}
-                          type="button"
-                          className={`${styles.patchButton} ${
-                            isRejected ? styles.patchButtonRejected : ''
-                          }`}
-                          onClick={() => void handlePatchAttempt(defect, patch)}
-                          data-testid={
-                            patch.isCorrect
-                              ? defect.repairTestId
-                              : `trap-${patch.id}`
-                          }
-                        >
-                          <span className={styles.patchLabel}>
-                            {patch.label}
-                          </span>
-                          <code className={styles.patchCode}>{patch.code}</code>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {lastTrap && (
-                    <div
-                      className={styles.trapAlert}
-                      role="status"
-                      data-testid={`trap-feedback-${defect.type}`}
+          {!state.repaired && (
+            <>
+              <p className={styles.cardDescription}>{defect.symptom}</p>
+              <p className={styles.pickPrompt} id={`pick-${defect.type}`}>
+                Choose a patch:
+              </p>
+              <div
+                className={styles.patchOptions}
+                role="group"
+                aria-labelledby={`pick-${defect.type}`}
+              >
+                {defect.patches.map((patch) => {
+                  const wasTried = tried.includes(patch.id);
+                  return (
+                    <button
+                      key={patch.id}
+                      type="button"
+                      className={`${styles.patchButton} ${wasTried ? styles.patchButtonRejected : ''}`}
+                      onClick={() => handlePatchAttempt(defect, patch)}
+                      aria-disabled={isChecking || undefined}
+                      data-testid={
+                        patch.isCorrect ? defect.repairTestId : `trap-${patch.id}`
+                      }
                     >
-                      <strong className={styles.trapAlertTitle}>
-                        ✕ Why this patch still fails WCAG:
-                      </strong>
-                      <p className={styles.trapAlertText}>
-                        {lastTrap.failureDiagnosis}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                      <span className={styles.patchLabel}>{patch.label}</span>
+                      {wasTried && (
+                        <span className={styles.patchTried}>Tried, didn’t work</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {isChecking && (
+                <p className={styles.checking}>Checking the live page…</p>
               )}
 
-              {/* Before / After Diff shown once repaired */}
-              {state.repaired && (
-                <div className={styles.codeDiff}>
-                  <div className={styles.codeBlockBroken}>
-                    <span className={styles.codeLabelBroken}>
-                      ✕ Broken (Before)
-                    </span>
-                    <code className={styles.codeSnippet}>
-                      {defect.brokenCode}
-                    </code>
-                  </div>
-                  <div className={styles.codeBlockFixed}>
-                    <span className={styles.codeLabelFixed}>
-                      ✓ Accessible Fix (After)
-                    </span>
-                    <code className={styles.codeSnippet}>
-                      {defect.repairedCode}
-                    </code>
-                  </div>
-                </div>
-              )}
-
-              {!state.discovered && (
-                <button
-                  type="button"
-                  className={styles.discoverButton}
-                  onClick={() => handleDiscover(defect)}
+              {lastTrap && (
+                <div
+                  className={styles.trapAlert}
+                  data-testid={`trap-feedback-${defect.type}`}
                 >
-                  Discover Defect
+                  <strong className={styles.trapAlertTitle}>Not quite.</strong>{' '}
+                  <span className={styles.trapAlertText}>
+                    {lastTrap.failureDiagnosis} Try another patch.
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+
+          {state.repaired && (
+            <div
+              ref={resultRef}
+              tabIndex={-1}
+              className={state.verified ? styles.feedback : styles.feedbackUnverified}
+              data-testid={`repair-result-${defect.type}`}
+            >
+              <p className={styles.verificationLabel}>
+                <span className={styles.verificationIcon} aria-hidden="true">
+                  {state.verified ? '✓' : '!'}
+                </span>
+                {state.verified
+                  ? 'Verified on the live page'
+                  : 'The live check did not pass yet'}
+              </p>
+              <p className={styles.resultText}>
+                {state.verified
+                  ? defect.fixedSummary
+                  : `The patch is on, but the check could not confirm the fix. Failed checks: ${failedChecks[defect.type] ?? 1}.`}
+              </p>
+              {state.verified ? (
+                <p className={styles.nextAction} data-testid="repair-next-action">
+                  {getRepairNextAction(defect.type, progress, defect.nextAction)}
+                </p>
+              ) : (
+                <button
+                  ref={retryRef}
+                  type="button"
+                  className={styles.retryButton}
+                  onClick={() => void runRepairAndCheck(defect, null)}
+                  aria-disabled={isChecking || undefined}
+                  data-testid="verify-retry"
+                >
+                  {isChecking ? 'Checking…' : 'Check again'}
                 </button>
               )}
+            </div>
+          )}
 
-              {state.repaired && (
-                <div
-                  ref={(el) => {
-                    feedbackRefs.current[defect.type] = el;
-                  }}
-                  tabIndex={-1}
-                  className={
-                    state.verified ? styles.feedback : styles.feedbackUnverified
-                  }
-                >
-                  <div className={styles.verificationBanner}>
-                    <span
-                      className={styles.verificationIcon}
-                      aria-hidden="true"
-                    >
-                      {state.verified ? '✓' : '!'}
-                    </span>
-                    <span className={styles.verificationLabel}>
-                      {state.verified
-                        ? 'Live DOM Verification Passed'
-                        : 'Verification Pending / Incomplete'}
-                    </span>
-                  </div>
-
-                  <p className={styles.verificationEvidence}>
-                    {formatVerificationDetails(defect, verification)}
-                  </p>
-
-                  <p className={styles.feedbackTitle}>Educational Feedback:</p>
-                  <p className={styles.feedbackText}>{feedbackMessage}</p>
+          <details className={styles.howItWorks} data-testid="how-repair-works">
+            <summary className={styles.howSummary}>How this repair works</summary>
+            <div className={styles.howBody}>
+              <p className={styles.wcagLine}>
+                {defect.wcagCriterion} (Level {defect.wcagLevel}) · Target:{' '}
+                <code>{defect.targetElement}</code>
+              </p>
+              <p className={styles.howText}>{defect.description}</p>
+              <div className={styles.codeBlockBroken}>
+                <span className={styles.codeLabelBroken}>Before</span>
+                <code className={styles.codeSnippet}>{defect.brokenCode}</code>
+              </div>
+              <div className={styles.codeBlockFixed}>
+                <span className={styles.codeLabelFixed}>After</span>
+                <code className={styles.codeSnippet}>{defect.repairedCode}</code>
+              </div>
+              {lastTrap && (
+                <div className={styles.codeBlockBroken}>
+                  <span className={styles.codeLabelBroken}>Last patch tried</span>
+                  <code className={styles.codeSnippet}>{lastTrap.code}</code>
                 </div>
               )}
+              {state.repaired && (
+                <p className={styles.verificationEvidence}>
+                  {formatVerificationDetails(defect, verification)}
+                </p>
+              )}
+              {state.verified && (
+                <p className={styles.howText}>{defect.defaultEducationalFeedback}</p>
+              )}
             </div>
-          );
-        })}
-      </div>
-    </div>
+          </details>
+        </div>
+      )}
+
+      {otherFound.length > 0 && (
+        <div className={styles.otherFound}>
+          <p className={styles.otherFoundLabel} id="other-found-label">
+            Also found:
+          </p>
+          <ul className={styles.otherFoundList} aria-labelledby="other-found-label">
+            {otherFound.map((type) => (
+              <li key={type}>
+                <button
+                  type="button"
+                  className={styles.switchButton}
+                  onClick={() => onSelect(type)}
+                  data-testid={`select-repair-${type}`}
+                >
+                  {getCurseByType(type).roomTitle}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
   );
 }

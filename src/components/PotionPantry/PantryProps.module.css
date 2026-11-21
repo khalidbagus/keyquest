@@ -1,0 +1,108 @@
+/**
+ * Cauldron and lantern potion.
+ * Motion: the liquid rises with each ingredient (state indication, transform
+ * scaleY from the bottom, 220ms) and its color crossfades. Brewing glows once
+ * (opacity, 220ms). The bottle's arrival is the room-complete beat (rare,
+ * 420ms). All collapse to instant under either reduced-motion setting.
+ */
+
+.cauldron {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+  display: inline-flex;
+  width: 120px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.cauldronSvg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.liquid {
+  fill: #4b386e;
+  transform-box: fill-box;
+  transform-origin: bottom;
+  transition:
+    transform 220ms var(--ease-out),
+    fill 220ms ease;
+}
+
+.brewing .liquid {
+  fill: #6d7fd6;
+}
+
+.murky .liquid {
+  fill: #5c5a3a;
+}
+
+.brewed .liquid {
+  fill: #fbbf24;
+}
+
+/* Solid-alpha glow behind the brewed cauldron; no gradient behind text. */
+.glow {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background-color: rgba(251, 191, 36, 0.2);
+  box-shadow: 0 0 28px 10px rgba(251, 191, 36, 0.3);
+  opacity: 0;
+  transition: opacity 220ms var(--ease-out);
+  pointer-events: none;
+}
+
+.brewed .glow {
+  opacity: 1;
+}
+
+.potion {
+  display: inline-flex;
+  width: 34px;
+  height: 48px;
+  flex-shrink: 0;
+  animation: potionArrive 420ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.potionSvg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+@keyframes potionArrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}
+
+@media (max-width: 640px) {
+  .cauldron {
+    width: 96px;
+    height: 80px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid,
+  .glow {
+    transition: none;
+  }
+
+  .potion {
+    animation: none;
+  }
+}
+
+:root[data-reduced-motion='true'] .liquid,
+:root[data-reduced-motion='true'] .glow {
+  transition: none;
+}
+
+:root[data-reduced-motion='true'] .potion {
+  animation: none;
+}

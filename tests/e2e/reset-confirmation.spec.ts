@@ -3,24 +3,10 @@
  * Tests reset dialog, confirmation flow, cancellation, and state reset
  */
 
-import { test, expect, type Page } from './fixtures';
+import { test, expect } from './fixtures';
 import AxeBuilder from './helpers/axe';
+import { completeRoom, expectCandles, repair, startRoom as startChallenge } from './helpers/room';
 
-async function startChallenge(page: Page) {
-  await page.goto('/');
-  await page.getByTestId('start-challenge').click();
-  await expect(page.getByTestId('challenge-sandbox')).toBeVisible();
-}
-
-async function discoverAndRepairDefect(page: Page, name: string, testId: string) {
-  const card = page
-    .locator('div')
-    .filter({ has: page.getByRole('heading', { name, exact: true }) })
-    .filter({ has: page.getByRole('button', { name: 'Discover Defect' }) })
-    .last();
-  await card.getByRole('button', { name: 'Discover Defect' }).click();
-  await page.getByTestId(testId).click();
-}
 
 test.describe('Reset Confirmation Dialog', () => {
   test('reset button is visible in challenge view', async ({ page }) => {
@@ -41,7 +27,7 @@ test.describe('Reset Confirmation Dialog', () => {
     await expect(dialog).toBeVisible();
 
     // Dialog should have proper content
-    await expect(page.getByText('Reset Challenge?')).toBeVisible();
+    await expect(page.getByText('Reset Midnight Checkout?')).toBeVisible();
     await expect(
       page.getByText('This will clear all your progress')
     ).toBeVisible();
@@ -134,8 +120,8 @@ test.describe('Reset Confirmation Dialog', () => {
     await startChallenge(page);
 
     // Make some progress - repair one defect
-    await discoverAndRepairDefect(page, 'Invisible Focus', 'repair-invisible-focus');
-    await expect(page.getByText('1 / 4 defects repaired')).toBeVisible();
+    await repair(page, 'invisible-focus');
+    await expectCandles(page, 1);
 
     // Open reset dialog
     await page.getByTestId('reset-button').click();
@@ -147,7 +133,7 @@ test.describe('Reset Confirmation Dialog', () => {
     await expect(page.getByTestId('reset-confirm-dialog')).not.toBeVisible();
 
     // Progress should be reset
-    await expect(page.getByText('0 / 4 defects repaired')).toBeVisible();
+    await expectCandles(page, 0);
 
     // Still in challenge view
     await expect(page.getByTestId('challenge-sandbox')).toBeVisible();
@@ -157,7 +143,7 @@ test.describe('Reset Confirmation Dialog', () => {
     await startChallenge(page);
 
     // Make some progress
-    await discoverAndRepairDefect(page, 'Invisible Focus', 'repair-invisible-focus');
+    await repair(page, 'invisible-focus');
 
     // Verify repair was applied
     const buyButton = page.getByTestId('defect-invisible-focus');
@@ -195,19 +181,17 @@ test.describe('Reset Confirmation Dialog', () => {
     await startChallenge(page);
 
     // Repair all four defects
-    await discoverAndRepairDefect(page, 'Invisible Focus', 'repair-invisible-focus');
-    await discoverAndRepairDefect(page, 'Mouse-Only Activation', 'repair-mouse-only');
-    await discoverAndRepairDefect(page, 'Missing Accessible Name', 'repair-missing-name');
-    await discoverAndRepairDefect(page, 'Insufficient Contrast', 'repair-low-contrast');
+    // Use the repaired controls, place the order, and take the key
+    await completeRoom(page);
 
-    // Should show completion
-    await expect(page.getByTestId('level-complete')).toBeVisible();
-
-    // Go back and reset
-    await page.getByRole('button', { name: 'Play Again' }).click();
+    // Go back to the menu and start over (confirmed)
+    await page.getByRole('button', { name: 'Return to Menu' }).click();
+    await page.getByTestId('start-fresh').click();
+    await expect(page.getByTestId('start-over-confirm-dialog')).toBeVisible();
+    await page.getByTestId('start-over-confirm').click();
 
     // Now verify defects are back to unrepaired
-    await expect(page.getByText('0 / 4 defects repaired')).toBeVisible();
+    await expectCandles(page, 0);
 
     // Verify actual DOM state - focus defect should be broken again
     const buyButton = page.getByTestId('defect-invisible-focus');

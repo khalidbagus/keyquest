@@ -217,7 +217,10 @@ button {
     box-shadow var(--transition-fast);
 }
 
-button:hover:not(:disabled) {
+/* Zero specificity: a component's own :hover rule always wins. With plain
+   button:hover:not(:disabled) (0,2,1), the crimson default beat component
+   rules like .cancelButton:hover (0,2,0) and failed text contrast on hover. */
+:where(button:hover:not(:disabled)) {
   background-color: var(--color-primary-hover);
 }
 
@@ -261,13 +264,17 @@ button:disabled {
    Reduced Motion (System + Manual Toggle)
    ============================================ */
 
+/* transition-duration must be 0s, not a tiny positive value: the default
+   transition-property is "all", so any positive duration starts a real
+   transition on every property and getComputedStyle reads the old value
+   right after a repair (this broke the live contrast check). */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 0s !important;
     scroll-behavior: auto !important;
   }
 }
@@ -277,7 +284,7 @@ button:disabled {
 :root[data-reduced-motion='true'] *::after {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
+  transition-duration: 0s !important;
   scroll-behavior: auto !important;
 }
 
