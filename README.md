@@ -3,7 +3,7 @@
 
 **Lift the curse. Learn the barrier. Repair the real interface.**
 
-An interactive browser game about repairing accessibility barriers in a haunted apothecary. Light the counter lantern in Midnight Checkout, then brew a potion in Potion Pantry. Built for **Kiroween 2026 · Costume Contest**.
+An interactive browser game about repairing accessibility barriers in a haunted apothecary. Light the counter lantern in Midnight Checkout, brew a potion in Potion Pantry, and explore a keyboard-playable 2D adventure in Clocktower Gate. Built for **Kiroween 2026 · Costume Contest**.
 
 ![React 19](https://img.shields.io/badge/React-19-149eca)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
@@ -13,17 +13,25 @@ An interactive browser game about repairing accessibility barriers in a haunted 
 
 *AI-generated cover artwork.*
 
-> **Accessibility notice:** The rooms contain five intentional accessibility barriers inside their labeled sandboxes. The surrounding application is designed to remain usable while you explore them. You can discover defects directly in the Repair Studio. Automated checks do not establish full WCAG conformance or certification.
+> **Accessibility notice:** The rooms contain six intentional accessibility barriers inside their labeled sandboxes. The surrounding application is designed to remain usable while you explore them. You can discover defects directly in the Repair Studio. Automated checks do not establish full WCAG conformance or certification.
 
 ## Overview
 
-In **Midnight Checkout**, the player restores a focus ring, keyboard activation, a button name, and readable contrast to complete a shopper's order. In **Potion Pantry**, the player adds labels to jars identified by color alone, then uses the repaired shelf to follow a recipe. Repairs change the live interface, and optional explanations show the code and verification evidence.
+In **Midnight Checkout**, restore a focus ring, keyboard activation, a button name, and readable contrast to complete a shopper's order. In **Potion Pantry**, add labels to jars identified by color alone, then use the repaired shelf to follow a recipe. In **Clocktower Gate**, light the courtyard lantern, collect graveyard clues, open the clockwork gate, and repair the Belfry bell dialog before ringing the bells.
 
-See the [original Midnight Checkout](release/screenshots/midnight-checkout.png) and [main menu](release/screenshots/main-menu.png) in screenshots from the November 15, 2026 release checkpoint.
+Repairs change the live interface. Optional explanations show the code and verification evidence.
+
+## Screenshots
+
+| Midnight Checkout (original release) | Clockworks Passage | Belfry |
+| --- | --- | --- |
+| ![Midnight Checkout sandbox next to the Repair Studio](release/screenshots/midnight-checkout.png) | ![Pumpkin Ghost near the open clockwork gate with the Route panel alongside the map](release/screenshots/clocktower-passage.png) | ![The Belfry with a lit window and all three bells rung](release/screenshots/clocktower-belfry.png) |
 
 ## Features
 
-- Two playable rooms linked by a door selector. Clocktower Gate is marked **Coming later**.
+- Three playable rooms linked by a door selector. The lantern potion unlocks Clocktower Gate.
+- A five-area Phaser adventure with keyboard movement, touch controls, and a button-based Route panel for travel and interactions.
+- Clocktower checkpoints and a journal for clues. Lantern, gate, and bell animations show the effects of your actions.
 - Repair Studio with code comparisons, educational feedback, and live verification.
 - Three progressive hints per defect.
 - Completion summary with elapsed time, hints used, and concepts encountered.
@@ -41,7 +49,11 @@ See the [original Midnight Checkout](release/screenshots/midnight-checkout.png) 
 2. Apply and verify a repair, then use the repaired control to light the lantern. Open **How this repair works** for code and verification evidence.
 3. Lift the remaining curses, place the order, and take the Pantry Key.
 4. Enter Potion Pantry, restore the jar labels, and follow the recipe. You can remove a wrong ingredient and keep brewing.
-5. Bottle the lantern potion and return to the doors.
+5. Bottle the lantern potion, return to the doors, and enter Clocktower Gate.
+6. Light the courtyard lantern, read the graveyard plaques, and open the gate to the Belfry.
+7. Repair the bell dialog's focus behavior, then use the journal clues to work out which bells to ring.
+
+In Clocktower Gate, focus the map and use the **arrow keys** to move, **Enter** or **Space** to interact, and **Tab** to leave the map. You can also use the touch controls or play through the Route panel.
 
 Use hints when needed or leave through Emergency Exit. Resume from the opening screen to pick up your browser-local progress.
 
@@ -54,12 +66,13 @@ Use hints when needed or leave through Emergency Exit. Resume from the opening s
 | Missing Accessible Name | Adds `aria-label="View shopping cart"` | Inspects naming attributes and text | 4.1.2 Name, Role, Value |
 | Insufficient Text Contrast | Changes the price text to a light foreground | Calculates contrast from computed colors and text size | 1.4.3 Contrast (Minimum) |
 | Color-Only Ingredient Jars | Shows a symbol and a visible name on each jar button | Checks the visible labels and button names | 1.4.1 Use of Color, 4.1.2 Name, Role, Value, 2.5.3 Label in Name |
+| Bell Dialog Focus | Moves focus into the dialog and back to the bell that opened it | Checks focus on open and after Ring, Cancel, and Escape | 2.4.3 Focus Order |
 
 The name check is a focused DOM heuristic, not the complete accessible-name algorithm. Focus verification detects visible styles but does not prove unclipped rendering or adequate contrast in every context. These checks teach specific repairs; they are not a general-purpose audit.
 
 ## Architecture
 
-**React 19 · TypeScript · Vite · CSS Modules**
+**React 19 · TypeScript · Vite · Phaser · CSS Modules**
 
 ```text
 App → GameProvider + AppShell
@@ -68,6 +81,7 @@ App → GameProvider + AppShell
        ├─ DoorSelectorView
        ├─ ChallengeView → MidnightCheckout + RepairStudio
        ├─ PantryView → PotionPantry + RepairStudio
+       ├─ ClocktowerView → Route panel + lazy-loaded Phaser scene + RepairStudio
        └─ CompletionView
 ```
 
@@ -78,7 +92,7 @@ App → GameProvider + AppShell
 - **Recovery:** The error boundary remounts sandbox and studio together. Loading recovery covers dynamically loaded game JS/CSS, not document/bootstrap failures before React starts.
 - **Delivery:** A static client application with no server API, database, or authentication service.
 
-Explore the [source](src), [tests](tests), [Midnight Checkout spec](.kiro/specs/adventure-phase-1-midnight-checkout/requirements.md), and [Potion Pantry spec](.kiro/specs/adventure-phase-2-potion-pantry/requirements.md).
+Explore the [source](src), [tests](tests), [Midnight Checkout spec](.kiro/specs/adventure-phase-1-midnight-checkout/requirements.md), [Potion Pantry spec](.kiro/specs/adventure-phase-2-potion-pantry/requirements.md), and [Clocktower Gate spec](.kiro/specs/adventure-phase-3-clocktower-gate/requirements.md).
 
 ## Getting started
 
@@ -140,6 +154,8 @@ The sandbox boundary and disclaimer distinguish deliberately broken examples fro
 
 At source baseline `5c0e8e4`, the publication review independently ran the build, ESLint, **60 unit tests**, and **78 Chromium E2E tests**, all passing. These are local results, not a claim that hosted CI has run. See the [v1.0 checkpoint](release/V1_0_CHECKPOINT.md) for provenance.
 
+For the Clocktower release candidate, typecheck, lint, build, the Phaser chunk check, production startup smoke, and **387 unit tests** passed locally. The full local Chromium run recorded **165 passed and 5 failed**. See the [Clocktower verification report](.kiro/specs/adventure-phase-3-clocktower-gate/verification.md).
+
 Known limitations:
 
 - Manual NVDA/VoiceOver testing, comprehensive zoom/reflow checks, and focus-indicator clipping assessment remain pending.
@@ -178,4 +194,4 @@ Project contributions are offered under the [MIT License](LICENSE). Third-party 
 
 ## Future development
 
-Clocktower Gate is the planned third room. Other follow-up work includes manual assistive-technology testing and first-time player observation.
+Follow-up work includes manual assistive-technology testing and first-time player observation.
