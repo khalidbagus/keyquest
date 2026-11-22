@@ -330,6 +330,62 @@ export const CURSE_CATALOG: readonly CurseCatalogEntry[] = [
       },
     ],
   },
+  {
+    type: 'bell-dialog-focus',
+    name: 'Bell Dialog Focus',
+    curseAlias: 'Wandering Rope Hex',
+    roomTitle: 'The bell dialog loses keyboard focus',
+    symptom:
+      'Opening a bell leaves focus outside the dialog, and closing it drops focus to the top of the page. Keyboard players lose their place every time.',
+    fixedSummary:
+      'Opening a bell now moves focus to Ring, and closing the dialog returns focus to the bell that opened it.',
+    nextAction: 'Ring the bells in the order the clues give: Moon, Key, Thorn.',
+    wcagCriterion: 'WCAG 2.4.3 Focus Order',
+    wcagCode: 'WCAG 2.4.3',
+    wcagLevel: 'A',
+    potionArtUrl: '/art/curse-focus.png',
+    targetElement: 'Bell dialog (role="dialog")',
+    description:
+      'The bell dialog opens without moving focus into it, and closing it re-renders the bell row, so the control that opened it is gone and focus falls to the page body.',
+    brokenCode:
+      'open(bell)  // focus stays on the opener\nclose()     // the bell row re-renders; focus falls to <body>',
+    repairedCode:
+      "dialog.addEventListener('keyquest-bell-open', () => ringButton.focus());\ndialog.addEventListener('keyquest-bell-close', (e) => bellFor(e.detail.bell).focus());",
+    defaultEducationalFeedback:
+      'Repair applied: opening the dialog moves focus to its Ring button, and closing it returns focus to the bell that opened it. Keyboard and screen reader users keep their place, meeting WCAG 2.4.3 (Focus Order).',
+    defaultVerificationEvidence:
+      'Live focus check: focus entered the dialog on open and returned to the Moon bell after Ring, Cancel, and Escape.',
+    testId: 'defect-bell-focus',
+    repairTestId: 'repair-bell-focus',
+    patches: [
+      {
+        id: 'bell-focus-fix',
+        label: 'Move focus into the dialog and back',
+        code: "on('keyquest-bell-open', focusRing); on('keyquest-bell-close', focusOpener);",
+        isCorrect: true,
+        failureDiagnosis: '',
+        mascotReaction: 'Ding! Focus walks into the dialog and back home to its bell.',
+      },
+      {
+        id: 'bell-trap-tabindex',
+        label: 'Add tabindex to the dialog',
+        code: '<div role="dialog" tabindex="-1">',
+        isCorrect: false,
+        failureDiagnosis:
+          'A tabindex lets the dialog take focus, but nothing moves focus there or brings it back to the bell.',
+        mascotReaction: 'The dialog can hold focus now, but nobody hands it over!',
+      },
+      {
+        id: 'bell-trap-bigger',
+        label: 'Make the Ring button bigger',
+        code: '.bellRing { min-width: 96px; min-height: 56px; }',
+        isCorrect: false,
+        failureDiagnosis:
+          'A bigger button is easier to click, but keyboard focus still stays outside the dialog and is lost when it closes.',
+        mascotReaction: 'Bigger, but the keyboard still cannot find it!',
+      },
+    ],
+  },
 ] as const;
 
 export function getCurseByType(type: DefectType): CurseCatalogEntry {

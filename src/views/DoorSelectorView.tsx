@@ -8,8 +8,8 @@
 import { useEffect, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import {
-  DOOR_REQUIREMENT,
   ROOMS,
+  getDoorRequirementText,
   getDoorState,
   isRoomCleared,
   type DoorState,
@@ -85,7 +85,7 @@ export function DoorSelectorView() {
                 <h3 className={styles.roomName}>{room.name}</h3>
                 <p className={styles.goal}>{room.goal}</p>
                 {(state === 'locked' || state === 'coming-soon') && (
-                  <p className={styles.requirement}>{DOOR_REQUIREMENT[room.id]}</p>
+                  <p className={styles.requirement}>{getDoorRequirementText(room.id, state)}</p>
                 )}
                 {state === 'cleared' && (
                   <p className={styles.requirement}>You earned the {room.reward}.</p>

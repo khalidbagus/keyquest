@@ -12,7 +12,107 @@ import type {
   AccessibleNameVerificationDetails,
   ContrastVerificationDetails,
   LabelVerificationDetails,
+  DialogFocusCheckId,
+  DialogFocusVerificationDetails,
 } from '../types';
+
+const DIALOG_CHECKS: readonly { id: DialogFocusCheckId; label: string }[] = [
+  { id: 'entry', label: 'Focus moves into the dialog' },
+  { id: 'return-ring', label: 'Focus returns after Ring' },
+  { id: 'return-cancel', label: 'Focus returns after Cancel' },
+  { id: 'return-escape', label: 'Focus returns after Escape' },
+];
+
+/** A short description of the focused element, such as `button "Ring"` or `body`. */
+function describeFocus(element: Element | null): string {
+  if (!element || element === document.body || element === document.documentElement) return 'body';
+  const tag = element.tagName.toLowerCase();
+  const role = element.getAttribute('role');
+  const text = (element.getAttribute('aria-label') ?? element.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 40);
+  return `${role ?? tag}${text ? ` "${text}"` : ''}`;
+}
+
+/** Wait up to `ms` (polling every animation frame) for a condition. */
+function waitFor(condition: () => boolean, ms = 300): Promise<boolean> {
+  return new Promise((resolve) => {
+    const start = performance.now();
+    const tick = () => {
+      if (condition()) return resolve(true);
+      if (performance.now() - start >= ms) return resolve(false);
+      requestAnimationFrame(tick);
+    };
+    tick();
+  });
+}
+
+/**
+ * Verifies focus management on the live bell dialog (design.md "Verification").
+ * Opens the dialog from the Moon bell, checks focus entry, then closes it once each
+ * through Ring, Cancel, and Escape and checks that focus returns to the Moon bell.
+ * While the sandbox carries `data-keyquest-verifying`, the bell tower records no
+ * discovery, no ring, and no status (Requirement 20.6).
+ */
+export async function verifyDialogFocus(dialog: HTMLElement | null): Promise<VerificationResult> {
+  const sandbox = dialog?.closest<HTMLElement>('[data-testid="challenge-sandbox"]') ?? null;
+  const firstBell = () =>
+    sandbox?.querySelector<HTMLElement>('[data-testid="bell-control-moon"]') ?? null;
+  const result = (checks: DialogFocusVerificationDetails['checks']): VerificationResult => ({
+    passed: checks.every((check) => check.passed),
+    defectType: 'bell-dialog-focus',
+    checkedAt: Date.now(),
+    details: { type: 'dialog-focus', checks },
+  });
+
+  if (!dialog || !sandbox || !firstBell()) {
+    return result(DIALOG_CHECKS.map((c) => ({ ...c, passed: false, focused: 'element not found' })));
+  }
+
+  const isOpen = () => dialog.dataset.open === 'true';
+  const checks: DialogFocusVerificationDetails['checks'] = [];
+  sandbox.dataset.keyquestVerifying = 'true';
+  try {
+    const closers: { id: DialogFocusCheckId; close: () => void }[] = [
+      { id: 'return-ring', close: () => dialog.querySelector<HTMLElement>('[data-testid="bell-ring"]')?.click() },
+      { id: 'return-cancel', close: () => dialog.querySelector<HTMLElement>('[data-testid="bell-cancel"]')?.click() },
+      {
+        id: 'return-escape',
+        close: () => {
+          const target = document.activeElement ?? document.body;
+          target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+        },
+      },
+    ];
+    for (const [index, closer] of closers.entries()) {
+      const bell = firstBell();
+      bell?.focus();
+      bell?.click();
+      await waitFor(isOpen);
+      if (index === 0) {
+        const active = document.activeElement;
+        checks.push({
+          ...DIALOG_CHECKS[0]!,
+          passed: isOpen() && !!active && dialog.contains(active),
+          focused: describeFocus(active),
+        });
+      }
+      closer.close();
+      await waitFor(() => !isOpen());
+      // The bell row may have been replaced: query the first bell again.
+      await waitFor(() => document.activeElement === firstBell(), 100);
+      const active = document.activeElement;
+      checks.push({
+        ...DIALOG_CHECKS.find((c) => c.id === closer.id)!,
+        passed: !isOpen() && !!active && active === firstBell(),
+        focused: describeFocus(active),
+      });
+    }
+  } finally {
+    // Leave the dialog closed whatever happened.
+    if (isOpen()) dialog.querySelector<HTMLElement>('[data-testid="bell-cancel"]')?.click();
+    delete sandbox.dataset.keyquestVerifying;
+  }
+  return result(checks);
+}
 
 /**
  * Verifies that keyboard activation works for an element.
@@ -333,6 +433,8 @@ export async function verify(
       return verifyContrastRatio(element);
     case 'color-only-ingredients':
       return verifyIngredientLabels(element);
+    case 'bell-dialog-focus':
+      return verifyDialogFocus(element);
     default:
       return {
         passed: false,

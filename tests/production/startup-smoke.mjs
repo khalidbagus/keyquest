@@ -56,4 +56,62 @@ try {
     console.log(`Production ${extension} failure, axe, keyboard retry: passed`);
     await failureContext.close();
   }
+
+  // The courtyard preview and the built override are development-only (Requirements 4.2, 4.5).
+  const flagContext = await browser.newContext();
+  const flagPage = await flagContext.newPage();
+  const phaserRequests = [];
+  flagPage.on('request', request => { if (/phaser|createWorldScene/i.test(request.url())) phaserRequests.push(request.url()); });
+  await flagPage.goto(`${baseURL}?preview=courtyard`);
+  await expect(flagPage.getByTestId('start-challenge')).toBeVisible();
+  await expect(flagPage.getByTestId('play-area')).toHaveCount(0);
+  await expect(flagPage.getByTestId('preview-label')).toHaveCount(0);
+  expect(new URL(flagPage.url()).searchParams.get('preview')).toBe('courtyard');
+
+  // The Clocktower is published (Task 26): without any override, a Pantry-cleared save
+  // shows the door Open, and the menu and door list still request no Phaser code.
+  await flagPage.addInitScript(() => {
+    if (sessionStorage.getItem('smoke-seeded')) return;
+    const now = Date.now();
+    const types = ['invisible-focus', 'mouse-only-activation', 'missing-accessible-name', 'insufficient-contrast', 'color-only-ingredients'];
+    const defects = {}; const hintsUsed = {};
+    for (const type of types) {
+      defects[type] = { type, discovered: true, discoveredAt: now - 1000, repaired: true, repairedAt: now - 900, verified: true, verifiedAt: now - 900, hintLevel: 0 };
+      hintsUsed[type] = 0;
+    }
+    localStorage.setItem('keyquest-progress-v1', JSON.stringify({
+      version: 2, sessionId: 'smoke', startedAt: now - 5000, lastUpdatedAt: now - 1000, currentRoom: 'pantry',
+      defects, hintsUsed,
+      checkout: { lanternLit: true, candleAdded: true, orderPlaced: true, keyTaken: true },
+      pantry: { cauldron: ['moonpetal', 'ember-salt', 'glowcap'], brewed: true, potionTaken: true },
+      isComplete: false, completedAt: null,
+    }));
+    sessionStorage.setItem('smoke-seeded', '1');
+  });
+  await flagPage.goto(baseURL);
+  await flagPage.getByTestId('start-challenge').click();
+  await expect(flagPage.getByRole('heading', { name: 'Choose a door' })).toBeVisible();
+  await expect(flagPage.getByTestId('door-clocktower')).toHaveAttribute('data-state', 'available');
+  await expect(flagPage.getByTestId('door-clocktower')).toContainText('Open');
+  await expect(flagPage.getByTestId('door-clocktower')).not.toContainText('Coming later');
+  expect(phaserRequests).toEqual([]);
+  console.log('Production preview flag is ignored; published Clocktower door is Open; no Phaser request from the menu or doors: passed');
+
+  // Entering the published room loads the Phaser chunk only now, and the scene is ready.
+  await flagPage.getByTestId('enter-clocktower').click();
+  await expect(flagPage.getByRole('heading', { name: 'Clocktower Gate', level: 2 })).toBeFocused();
+  await expect(flagPage.getByTestId('play-area')).toHaveAttribute('data-scene-state', 'ready', { timeout: 30000 });
+  expect(phaserRequests.length).toBeGreaterThan(0);
+  expect((await new AxeBuilder({ page: flagPage }).exclude('[data-testid="challenge-sandbox"]').analyze()).violations).toEqual([]);
+  console.log('Production Clocktower entry, scene ready, shell axe: passed');
+  await flagContext.close();
+
+  // Production still ignores the preview flag with no save: the door is Locked, not previewed.
+  const lockedContext = await browser.newContext();
+  const lockedPage = await lockedContext.newPage();
+  await lockedPage.goto(`${baseURL}?preview=courtyard&built=clocktower`);
+  await expect(lockedPage.getByTestId('start-challenge')).toBeVisible();
+  await expect(lockedPage.getByTestId('play-area')).toHaveCount(0);
+  console.log('Production ignores ?preview=courtyard with a fresh save: passed');
+  await lockedContext.close();
 } finally { await browser.close(); }

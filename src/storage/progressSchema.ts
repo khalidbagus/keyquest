@@ -13,9 +13,21 @@ import {
   normalizeCheckoutState,
 } from '../registry/roomRegistry';
 import { INITIAL_PANTRY_STATE, normalizePantryState } from '../registry/pantryRegistry';
-import { ALL_DEFECT_TYPES, ROOM_DEFECTS } from '../registry/roomsRegistry';
+import {
+  ALL_DEFECT_TYPES,
+  ROOM_DEFECTS,
+  ROOMS,
+  isRoomBuilt,
+  isRoomCleared,
+  isRoomUnlocked,
+} from '../registry/roomsRegistry';
+import {
+  createInitialClocktowerState,
+  normalizeClocktowerState,
+} from '../engines/clocktowerRules';
 
-export const PROGRESS_VERSION = 2;
+/** Version 3 adds the Clocktower route and the bell curse (Requirement 16.1). */
+export const PROGRESS_VERSION = 3;
 
 export function createInitialDefectState(type: DefectType): DefectState {
   return {
@@ -47,6 +59,7 @@ export function createInitialProgressState(): ProgressState {
     hintsUsed,
     checkout: { ...INITIAL_CHECKOUT_STATE },
     pantry: { ...INITIAL_PANTRY_STATE, cauldron: [] },
+    clocktower: createInitialClocktowerState(),
     isComplete: false,
     completedAt: null,
   };
@@ -69,17 +82,21 @@ function isValidDefectState(data: unknown): data is DefectState {
   );
 }
 
-/** Rooms a save may resume into (built rooms only). */
-const ROOM_IDS: readonly RoomId[] = ['checkout', 'pantry'];
+/** Rooms a save may name as its current room. */
+const ROOM_IDS: readonly RoomId[] = ['checkout', 'pantry', 'clocktower'];
 
 /**
  * Validate and migrate raw saved data. Returns null for anything that is not
- * a complete version 1 or version 2 save. Never throws.
+ * a complete version 1, 2, or 3 save (Requirement 16.7). Never throws.
+ * `built` says whether the Clocktower room is built; unit tests pass it directly.
  */
-export function migrateProgress(data: unknown): ProgressState | null {
+export function migrateProgress(
+  data: unknown,
+  built: boolean = isRoomBuilt('clocktower')
+): ProgressState | null {
   if (typeof data !== 'object' || data === null) return null;
   const obj = data as Record<string, unknown>;
-  if (obj.version !== 1 && obj.version !== 2) return null;
+  if (obj.version !== 1 && obj.version !== 2 && obj.version !== 3) return null;
   if (typeof obj.sessionId !== 'string') return null;
   if (typeof obj.startedAt !== 'number' || typeof obj.lastUpdatedAt !== 'number') return null;
   if (typeof obj.isComplete !== 'boolean') return null;
@@ -126,26 +143,44 @@ export function migrateProgress(data: unknown): ProgressState | null {
     pantry.potionTaken = false;
   }
 
-  const currentRoom: RoomId =
+  // Without the potion the Clocktower holds no progress (Requirement 16.3).
+  // Otherwise the prerequisite chain clears what is not earned (Requirement 16.4).
+  const clocktower = pantry.potionTaken
+    ? normalizeClocktowerState(obj.clocktower, defects['bell-dialog-focus'].verified)
+    : createInitialClocktowerState();
+
+  const fallbackRoom: RoomId = checkout.keyTaken ? 'pantry' : 'checkout';
+  const savedRoom =
     typeof obj.currentRoom === 'string' && ROOM_IDS.includes(obj.currentRoom as RoomId)
       ? (obj.currentRoom as RoomId)
-      : checkout.keyTaken
-        ? 'pantry'
-        : 'checkout';
+      : fallbackRoom;
 
-  const isComplete = checkout.keyTaken && pantry.potionTaken;
-
-  return {
+  const migrated: ProgressState = {
     version: PROGRESS_VERSION,
     sessionId: obj.sessionId,
     startedAt: obj.startedAt,
     lastUpdatedAt: obj.lastUpdatedAt,
-    currentRoom,
+    currentRoom: savedRoom,
     defects,
     hintsUsed,
     checkout,
     pantry,
-    isComplete,
-    completedAt: isComplete ? (obj.completedAt as number | null) ?? null : null,
+    clocktower,
+    isComplete: false,
+    completedAt: null,
   };
+
+  // A save never resumes into a room that is not built, or whose door is not open
+  // (Requirements 16.6, 18.6).
+  if (savedRoom === 'clocktower' && !isRoomUnlocked(migrated, 'clocktower', built)) {
+    migrated.currentRoom = fallbackRoom;
+  }
+
+  // Every built room is cleared, including the lights while the Clocktower is built.
+  const isComplete = ROOMS.filter((room) =>
+    room.id === 'clocktower' ? built : isRoomBuilt(room.id)
+  ).every((room) => isRoomCleared(migrated, room.id));
+  migrated.isComplete = isComplete;
+  migrated.completedAt = isComplete ? ((obj.completedAt as number | null) ?? null) : null;
+  return migrated;
 }

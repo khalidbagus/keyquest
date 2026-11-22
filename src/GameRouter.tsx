@@ -6,6 +6,7 @@ import {
   CompletionView,
   DoorSelectorView,
   PantryView,
+  ClocktowerView,
 } from './views';
 
 /**
@@ -34,6 +35,7 @@ export default function GameRouter() {
       );
 
     case 'challenge':
+      if (progress.currentRoom === 'clocktower') return <ClocktowerView key="clocktower" />;
       return progress.currentRoom === 'pantry' ? (
         <PantryView key="pantry" />
       ) : (

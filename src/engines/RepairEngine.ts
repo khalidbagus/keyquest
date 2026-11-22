@@ -177,6 +177,49 @@ export function repairColorOnlyIngredients(element: HTMLElement): RepairResult {
 }
 
 /**
+ * Applies the repair for Bell Dialog Focus (Belfry sandbox).
+ * Opening moves focus to Ring; closing returns focus to the replacement of the
+ * bell control that opened the dialog. Listeners are stored for reset.
+ */
+export function repairBellDialogFocus(dialog: HTMLElement): RepairResult {
+  if (dialog.dataset.keyquestRepaired === 'bell-focus') {
+    return {
+      success: true,
+      defectType: 'bell-dialog-focus',
+      message: 'Element was already repaired.',
+      domChanges: [],
+    };
+  }
+  const onOpen: EventListener = () => {
+    dialog.querySelector<HTMLElement>('[data-testid="bell-ring"]')?.focus();
+  };
+  const onClose: EventListener = (event) => {
+    const bell = (event as CustomEvent<{ bell?: string }>).detail?.bell;
+    if (!bell) return;
+    const sandbox = dialog.closest('[data-testid="challenge-sandbox"]') ?? dialog.parentElement;
+    sandbox?.querySelector<HTMLElement>(`[data-bell="${CSS.escape(bell)}"]`)?.focus();
+  };
+  if (!addedListeners.has(dialog)) addedListeners.set(dialog, []);
+  addedListeners.get(dialog)!.push(
+    { event: 'keyquest-bell-open', handler: onOpen },
+    { event: 'keyquest-bell-close', handler: onClose }
+  );
+  dialog.addEventListener('keyquest-bell-open', onOpen);
+  dialog.addEventListener('keyquest-bell-close', onClose);
+  dialog.dataset.keyquestRepaired = 'bell-focus';
+  return {
+    success: true,
+    defectType: 'bell-dialog-focus',
+    message:
+      'Repair applied: opening the bell dialog moves focus to Ring, and closing it returns focus to the bell that opened it. This meets WCAG 2.4.3 (Focus Order).',
+    domChanges: [
+      'Added keyquest-bell-open listener that focuses Ring',
+      'Added keyquest-bell-close listener that focuses the opening bell',
+    ],
+  };
+}
+
+/**
  * Main repair function - dispatches to specific repair based on defect type.
  */
 export function applyRepair(
@@ -194,6 +237,8 @@ export function applyRepair(
       return repairInsufficientContrast(element);
     case 'color-only-ingredients':
       return repairColorOnlyIngredients(element);
+    case 'bell-dialog-focus':
+      return repairBellDialogFocus(element);
     default:
       return {
         success: false,
@@ -251,6 +296,16 @@ export function resetRepair(defectType: DefectType, element: HTMLElement): void 
       element.classList.remove('keyquest-labels-repaired');
       delete element.dataset.keyquestRepaired;
       break;
+
+    case 'bell-dialog-focus': {
+      const listeners = addedListeners.get(element);
+      if (listeners) {
+        for (const { event, handler } of listeners) element.removeEventListener(event, handler);
+        addedListeners.delete(element);
+      }
+      delete element.dataset.keyquestRepaired;
+      break;
+    }
   }
 }
 
@@ -265,6 +320,7 @@ export function resetAllRepairs(): void {
     'missing-accessible-name': '[data-testid="defect-missing-name"]',
     'insufficient-contrast': '[data-testid="defect-low-contrast"]',
     'color-only-ingredients': '[data-testid="defect-color-only"]',
+    'bell-dialog-focus': '[data-testid="defect-bell-focus"]',
   };
 
   for (const [defectType, selector] of Object.entries(defectSelectors)) {

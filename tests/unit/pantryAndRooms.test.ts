@@ -80,7 +80,9 @@ describe('doors derived from verified progress', () => {
     expect(isRoomUnlocked(p, 'pantry')).toBe(false);
     p.checkout.orderPlaced = true;
     expect(getDoorState(p, 'pantry')).toBe('available');
-    expect(getDoorState(p, 'clocktower')).toBe('coming-soon');
+    // The Clocktower is published (Task 26) and waits for the lantern potion.
+    expect(getDoorState(p, 'clocktower')).toBe('locked');
+    expect(getDoorState(p, 'clocktower', false)).toBe('coming-soon');
   });
 
   it('re-locks the Pantry if the Checkout is reset, while keeping Pantry progress', () => {
@@ -117,7 +119,7 @@ describe('doors derived from verified progress', () => {
   });
 });
 
-describe('version 1 → 2 migration', () => {
+describe('version 1 migration (now to version 3)', () => {
   function v1(complete: boolean) {
     const p = verify(createInitialProgressState(), complete ? CHECKOUT : ['invisible-focus']) as unknown as Record<string, unknown>;
     const defects = { ...(p.defects as Record<string, unknown>) };
@@ -129,7 +131,7 @@ describe('version 1 → 2 migration', () => {
 
   it('keeps discoveries, repairs, verification, and hints, and adds the Pantry unset', () => {
     const migrated = migrateProgress(v1(false))!;
-    expect(migrated.version).toBe(2);
+    expect(migrated.version).toBe(3);
     expect(migrated.currentRoom).toBe('checkout');
     expect(migrated.defects['invisible-focus'].verified).toBe(true);
     expect(migrated.hintsUsed['invisible-focus']).toBe(2);

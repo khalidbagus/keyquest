@@ -48,6 +48,10 @@ function formatVerificationDetails(
       return passed
         ? `Label check: ${details.labelled} of ${details.total} jars show a visible name that is also their accessible name.`
         : `Label check: ${details.labelled} of ${details.total} jars labelled. Missing: ${details.failing.join(', ') || 'all'}.`;
+    case 'dialog-focus':
+      return `Live focus check: ${details.checks
+        .map((check) => `${check.label}: ${check.passed ? 'pass' : 'fail'} (focus on ${check.focused})`)
+        .join('; ')}.`;
     default:
       return defect.defaultVerificationEvidence;
   }
@@ -62,7 +66,18 @@ const PAYOFF_FOCUS: Partial<Record<DefectType, (target: HTMLElement) => HTMLElem
   'mouse-only-activation': (el) => el,
   'missing-accessible-name': (el) => el,
   'color-only-ingredients': (el) => el.querySelector<HTMLElement>('[data-ingredient]'),
+  // The verified bell dialog hands focus to the first bell (Requirement 20.10).
+  'bell-dialog-focus': (dialog) =>
+    dialog
+      .closest('[data-testid="challenge-sandbox"]')
+      ?.querySelector<HTMLElement>('[data-testid="bell-control-moon"]') ?? null,
 };
+
+/** Names of the failed checks, for results that report several (Requirement 20.9). */
+function failedCheckNames(verification: VerificationResult | null | undefined): string[] {
+  if (!verification || verification.details.type !== 'dialog-focus') return [];
+  return verification.details.checks.filter((check) => !check.passed).map((check) => check.label);
+}
 
 interface RepairStudioProps {
   /** Curses in this room, in canonical order. */
@@ -167,8 +182,11 @@ export function RepairStudio({
           const attempts = (failedChecksRef.current[defect.type] ?? 0) + 1;
           failedChecksRef.current[defect.type] = attempts;
           setFailedChecks((prev) => ({ ...prev, [defect.type]: attempts }));
+          const failedNames = failedCheckNames(verification);
           setAnnouncement(
-            `Check ${attempts} did not pass for ${defect.roomTitle}. Use Check again.`
+            `Check ${attempts} did not pass for ${defect.roomTitle}.${
+              failedNames.length > 0 ? ` Failed: ${failedNames.join(', ')}.` : ''
+            } Use Check again.`
           );
           triggerCompanion(
             'reactFailure',
@@ -348,6 +366,13 @@ export function RepairStudio({
                   ? defect.fixedSummary
                   : `The patch is on, but the check could not confirm the fix. Failed checks: ${failedChecks[defect.type] ?? 1}.`}
               </p>
+              {!state.verified && failedCheckNames(verification).length > 0 && (
+                <ul className={styles.resultText} data-testid={`failed-checks-${defect.type}`}>
+                  {failedCheckNames(verification).map((name) => (
+                    <li key={name}>{name}</li>
+                  ))}
+                </ul>
+              )}
               {state.verified ? (
                 <p className={styles.nextAction} data-testid="repair-next-action">
                   {getRepairNextAction(defect.type, progress, defect.nextAction)}

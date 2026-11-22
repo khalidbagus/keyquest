@@ -5,6 +5,7 @@
 
 import { StorageAdapter } from './StorageAdapter';
 import type { ProgressState } from '../types';
+import { hasClocktowerProgress } from '../engines/clocktowerRules';
 
 // Singleton storage adapter instance
 const storageAdapter = new StorageAdapter();
@@ -33,7 +34,9 @@ export function hasMeaningfulProgress(progress: ProgressState): boolean {
   const hasCheckoutProgress = Object.values(progress.checkout).some(Boolean);
   const hasPantryProgress =
     progress.pantry.cauldron.length > 0 || progress.pantry.brewed;
-  return hasDefectProgress || hasCheckoutProgress || hasPantryProgress;
+  // A Checkpoint, the lantern, a Clue, the gate, the shortcut, or a ring (Requirement 17.6).
+  const hasRouteProgress = progress.clocktower ? hasClocktowerProgress(progress.clocktower) : false;
+  return hasDefectProgress || hasCheckoutProgress || hasPantryProgress || hasRouteProgress;
 }
 
 /**

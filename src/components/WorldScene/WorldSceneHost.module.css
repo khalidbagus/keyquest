@@ -1,0 +1,15 @@
+/* The canvas holder fills the Play_Area. Clipping lives here, not on the focus ring. */
+.holder {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--border-radius-md);
+  background-color: #140d21;
+}
+
+.holder canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+}

@@ -13,7 +13,12 @@ import { CostumeLockerModal } from '../components/CostumeLocker';
 import { CostumeMaskIcon, KeyCrestIcon } from '../components/Icons/ApothecaryIcons';
 import { getCurseByType } from '../registry/patchRegistry';
 import type { DefectType, RoomId } from '../types';
-import { ROOM_DEFECTS, isRoomUnlocked } from '../registry/roomsRegistry';
+import {
+  ROOM_DEFECTS,
+  getDoorState,
+  isRoomUnlocked,
+  type DoorState,
+} from '../registry/roomsRegistry';
 import { LanternPotion } from '../components/PotionPantry/PantryProps';
 import styles from './CompletionView.module.css';
 
@@ -116,6 +121,20 @@ const ROOM_COPY: Record<RoomId, RoomCompletionCopy> = {
   },
 };
 
+const CLOCKTOWER_NEXT_STATE: Record<DoorState, string> = {
+  'coming-soon': 'Coming later',
+  locked: 'Locked',
+  available: 'Open',
+  cleared: 'Cleared',
+};
+
+const CLOCKTOWER_NEXT_DETAIL: Record<DoorState, string> = {
+  'coming-soon': 'Ring three bells in order to bring the lights back. This door opens in a later update.',
+  locked: 'Ring three bells in order to bring the lights back. This door needs the lantern potion from the Potion Pantry.',
+  available: 'Ring three bells in order to bring the lights back. Your lantern potion opens it now.',
+  cleared: 'The bells ring again and the lights are back. You can revisit the room.',
+};
+
 export function CompletionView() {
   const { state, dispatch, progress } = useGame();
   const { companion, companionSignal, triggerCompanion } = useMascot();
@@ -126,7 +145,17 @@ export function CompletionView() {
 
   const summary = state.phase === 'completion' ? state.summary : null;
   const roomId: RoomId = summary?.roomId ?? 'checkout';
-  const copy = ROOM_COPY[roomId];
+  const baseCopy = ROOM_COPY[roomId];
+  // The Pantry's "next door" line follows the Clocktower door's current state.
+  const clocktowerState = getDoorState(progress, 'clocktower');
+  const copy: RoomCompletionCopy =
+    roomId === 'pantry'
+      ? {
+          ...baseCopy,
+          nextDetail: CLOCKTOWER_NEXT_DETAIL[clocktowerState],
+          nextState: CLOCKTOWER_NEXT_STATE[clocktowerState],
+        }
+      : baseCopy;
 
   useEffect(() => {
     titleRef.current?.focus();

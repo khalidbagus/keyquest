@@ -3,6 +3,10 @@
  * Based on approved design spec
  */
 
+import type { ClocktowerState, WorldAction, WorldOutcome, WorldSession } from './clocktower';
+
+export type * from './clocktower';
+
 // ============================================
 // DEFECT TYPES
 // ============================================
@@ -14,7 +18,9 @@ export type DefectType =
   | 'missing-accessible-name'
   | 'insufficient-contrast'
   // Room 2: Potion Pantry
-  | 'color-only-ingredients';
+  | 'color-only-ingredients'
+  // Room 3: Clocktower Gate (the bell dialog curse; its repair is Checkpoint 3)
+  | 'bell-dialog-focus';
 
 // ============================================
 // ROOMS
@@ -76,7 +82,16 @@ export type VerificationDetails =
   | KeyboardVerificationDetails
   | AccessibleNameVerificationDetails
   | ContrastVerificationDetails
-  | LabelVerificationDetails;
+  | LabelVerificationDetails
+  | DialogFocusVerificationDetails;
+
+/** The four live checks of the bell dialog (Requirement 20.7). */
+export type DialogFocusCheckId = 'entry' | 'return-ring' | 'return-cancel' | 'return-escape';
+
+export interface DialogFocusVerificationDetails {
+  type: 'dialog-focus';
+  checks: { id: DialogFocusCheckId; label: string; passed: boolean; focused: string }[];
+}
 
 export interface FocusVerificationDetails {
   type: 'focus';
@@ -154,11 +169,12 @@ export type PantryAction =
   | { action: 'bottle' };
 
 /**
- * Version 2 adds rooms. Version 1 saves (Checkout only) are migrated on load
- * with their discoveries, repairs, verification, and hints kept.
+ * Version 2 added rooms; version 3 adds the Clocktower route and the bell curse.
+ * Version 1 (Checkout only) and version 2 saves are migrated on load with their
+ * discoveries, repairs, verification, hints, and room actions kept.
  */
 export interface ProgressState {
-  version: 2;
+  version: 3;
   sessionId: string;
   startedAt: number;
   lastUpdatedAt: number;
@@ -167,6 +183,8 @@ export interface ProgressState {
   hintsUsed: Record<DefectType, number>;
   checkout: CheckoutRoomState;
   pantry: PantryRoomState;
+  /** Clocktower_State: the route through the Clocktower Gate. */
+  clocktower: ClocktowerState;
   /** Every room built so far is cleared. */
   isComplete: boolean;
   completedAt: number | null;
@@ -221,7 +239,10 @@ export type GameAction =
   | { type: 'ENTER_ROOM'; roomId: RoomId }
   | { type: 'OPEN_DOORS' }
   | { type: 'COMPLETE_ROOM'; roomId: RoomId }
-  | { type: 'RESET_ROOM'; roomId: RoomId };
+  | { type: 'RESET_ROOM'; roomId: RoomId }
+  | { type: 'WORLD_ACTION'; action: WorldAction }
+  /** Development and test builds only: open the courtyard with progress kept in memory. */
+  | { type: 'ENTER_COURTYARD_PREVIEW' };
 
 // ============================================
 // HINTS
@@ -245,4 +266,15 @@ export interface GameContextValue {
   resetProgress: () => void;
   /** Reset one room and save right away (not on the autosave debounce). */
   resetRoom: (roomId: RoomId) => void;
+  /** Clocktower_State, read from `progress.clocktower`. */
+  clocktower: ClocktowerState;
+  /** The current Area and arrival spawn. Not saved. */
+  world: WorldSession;
+  /** True while the courtyard preview is active: nothing is written to storage. */
+  preview: boolean;
+  /**
+   * Evaluate and apply a World_Action. Returns the same outcome the reducer
+   * applies, so the view can announce it.
+   */
+  dispatchWorldAction: (action: WorldAction) => WorldOutcome;
 }

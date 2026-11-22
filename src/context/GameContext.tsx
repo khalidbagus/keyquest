@@ -9,10 +9,12 @@ import {
   useReducer,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   type ReactNode,
 } from 'react';
 import type {
+  ClocktowerState,
   CompletionSummary,
   DefectType,
   GameAction,
@@ -20,6 +22,10 @@ import type {
   GameState,
   ProgressState,
   RoomId,
+  RulesContext,
+  WorldAction,
+  WorldOutcome,
+  WorldSession,
 } from '../types';
 import { StorageAdapter } from '../storage/StorageAdapter';
 import { getMeaningfulSavedProgress } from '../storage/progressHelpers';
@@ -35,11 +41,17 @@ import {
 } from '../registry/pantryRegistry';
 import {
   ROOM_DEFECTS,
-  getRoom,
   isAdventureComplete,
+  isRoomBuilt,
   isRoomCleared,
   isRoomUnlocked,
 } from '../registry/roomsRegistry';
+import { COURTYARD_SPAWN } from '../registry/clocktowerRoute';
+import {
+  createInitialClocktowerState,
+  evaluateWorldAction,
+  resumeSession,
+} from '../engines/clocktowerRules';
 
 // Exported for unit tests of hint progression (Property 6)
 // eslint-disable-next-line react-refresh/only-export-components
@@ -55,7 +67,7 @@ const CONCEPTS: Record<RoomId, string[]> = {
     'WCAG 1.4.3 - Contrast (Minimum)',
   ],
   pantry: ['WCAG 1.4.1 - Use of Color', 'WCAG 2.5.3 - Label in Name'],
-  clocktower: [],
+  clocktower: ['WCAG 2.4.3 - Focus Order'],
 };
 
 const initialGameState: GameState = { phase: 'loading' };
@@ -64,9 +76,54 @@ const initialGameState: GameState = { phase: 'loading' };
 // Reducer
 // ============================================
 
+/** The courtyard preview keeps the player's real progress here and writes nothing. */
+interface PreviewState {
+  stash: ProgressState;
+}
+
 interface ReducerState {
   game: GameState;
+  /** Saved progress, including Clocktower_State in `progress.clocktower`. */
   progress: ProgressState;
+  /** The current Area and arrival spawn. Not saved. */
+  session: WorldSession;
+  preview: PreviewState | null;
+}
+
+/** The courtyard preview's session. */
+function createPreviewSession(seq = 0): WorldSession {
+  return { area: 'courtyard', arrival: { spawn: COURTYARD_SPAWN, seq } };
+}
+
+function createInitialReducerState(progress: ProgressState): ReducerState {
+  return {
+    game: initialGameState,
+    progress,
+    session: resumeSession(progress.clocktower ?? createInitialClocktowerState(), 0),
+    preview: null,
+  };
+}
+
+// Progress or reducer states built without these fields (older unit tests) fall back to initial values.
+function clocktowerOf(state: ReducerState): ClocktowerState {
+  return state.progress.clocktower ?? createInitialClocktowerState();
+}
+
+function sessionOf(state: ReducerState): WorldSession {
+  return state.session ?? resumeSession(clocktowerOf(state), 0);
+}
+
+/** Enter the Clocktower at the last Checkpoint, or the Apothecary Exit (Requirement 17.2). */
+function arrivalSession(state: ReducerState, clocktower: ClocktowerState = clocktowerOf(state)): WorldSession {
+  return resumeSession(clocktower, sessionOf(state).arrival.seq + 1);
+}
+
+function rulesContextOf(state: ReducerState): RulesContext {
+  return {
+    potionHeld: state.progress.pantry.potionTaken,
+    bellCurseVerified: state.progress.defects['bell-dialog-focus']?.verified === true,
+    previewCourtyardOnly: (state.preview ?? null) !== null,
+  };
 }
 
 type ReducerAction = GameAction;
@@ -101,6 +158,11 @@ function resetRoomProgress(progress: ProgressState, room: RoomId, now: number): 
     hintsUsed,
     checkout: room === 'checkout' ? { ...INITIAL_CHECKOUT_STATE } : progress.checkout,
     pantry: room === 'pantry' ? { ...INITIAL_PANTRY_STATE, cauldron: [] } : progress.pantry,
+    // Resetting the Pantry takes the potion back, so the Clocktower route clears too.
+    clocktower:
+      room === 'clocktower' || room === 'pantry'
+        ? createInitialClocktowerState()
+        : (progress.clocktower ?? createInitialClocktowerState()),
     isComplete: false,
     completedAt: null,
   };
@@ -132,16 +194,24 @@ export function gameReducer(
         lastUpdatedAt: now,
       };
       const cleared = isRoomCleared(progress, progress.currentRoom);
-      return { ...state, game: { phase: cleared ? 'doors' : 'challenge' }, progress };
+      const intoClocktower = !cleared && progress.currentRoom === 'clocktower';
+      return {
+        ...state,
+        game: { phase: cleared ? 'doors' : 'challenge' },
+        progress,
+        session: intoClocktower ? arrivalSession(state) : state.session,
+      };
     }
 
     case 'ENTER_ROOM': {
-      const room = getRoom(action.roomId);
-      if (!room.built || !isRoomUnlocked(state.progress, action.roomId)) return state;
+      if (!isRoomBuilt(action.roomId) || !isRoomUnlocked(state.progress, action.roomId)) {
+        return state;
+      }
       return {
         ...state,
         game: { phase: 'challenge' },
         progress: { ...state.progress, currentRoom: action.roomId, lastUpdatedAt: now },
+        session: action.roomId === 'clocktower' ? arrivalSession(state) : state.session,
       };
     }
 
@@ -215,6 +285,19 @@ export function gameReducer(
     }
 
     case 'EMERGENCY_EXIT':
+      // Leaving the preview discards its in-memory progress and restores the real save.
+      if (state.preview) {
+        return {
+          ...state,
+          game: { phase: 'menu' },
+          progress: state.preview.stash,
+          session: resumeSession(
+            state.preview.stash.clocktower ?? createInitialClocktowerState(),
+            sessionOf(state).arrival.seq + 1
+          ),
+          preview: null,
+        };
+      }
       return {
         ...state,
         game: { phase: 'menu' },
@@ -248,20 +331,70 @@ export function gameReducer(
     }
 
     case 'RESET_CHALLENGE':
-      return { game: { phase: 'menu' }, progress: createInitialProgressState() };
+      return { ...createInitialReducerState(createInitialProgressState()), game: { phase: 'menu' } };
 
-    case 'RESET_ROOM':
+    case 'RESET_ROOM': {
+      const progress = resetRoomProgress(state.progress, action.roomId, now);
+      if (action.roomId !== 'clocktower') return { ...state, progress };
+      // In the preview the Ghost returns to the courtyard spawn; otherwise to the
+      // Apothecary Exit (Requirement 17.7).
+      const seq = sessionOf(state).arrival.seq + 1;
       return {
         ...state,
-        progress: resetRoomProgress(state.progress, action.roomId, now),
+        progress,
+        session: state.preview ? createPreviewSession(seq) : resumeSession(progress.clocktower, seq),
       };
+    }
 
-    case 'RESTORE_PROGRESS':
+    case 'WORLD_ACTION': {
+      const result = evaluateWorldAction(
+        clocktowerOf(state),
+        sessionOf(state),
+        rulesContextOf(state),
+        action.action
+      );
+      // Rejected, repeated, and invalid actions keep the same state object, so no save runs.
+      if (result.outcome.kind !== 'changed') return state;
+      // A move within known Areas changes only the session, so progress is not rewritten.
+      if (result.state === clocktowerOf(state)) return { ...state, session: result.session };
+      return {
+        ...state,
+        progress: { ...state.progress, clocktower: result.state, lastUpdatedAt: now },
+        session: result.session,
+      };
+    }
+
+    case 'ENTER_COURTYARD_PREVIEW': {
+      if (!import.meta.env.DEV) return state;
+      // A second activation rebuilds from the same stash, so every entry is identical.
+      const stash = state.preview ? state.preview.stash : state.progress;
+      const base = createInitialProgressState();
       return {
         ...state,
         game: { phase: 'challenge' },
-        progress: { ...action.progress, lastUpdatedAt: now },
+        progress: {
+          ...base,
+          currentRoom: 'clocktower',
+          pantry: { ...base.pantry, potionTaken: true },
+          clocktower: createInitialClocktowerState(),
+        },
+        session: createPreviewSession(1),
+        preview: { stash },
       };
+    }
+
+    case 'RESTORE_PROGRESS': {
+      const progress = { ...action.progress, lastUpdatedAt: now };
+      return {
+        ...state,
+        game: { phase: 'challenge' },
+        progress,
+        session:
+          progress.currentRoom === 'clocktower'
+            ? arrivalSession(state, progress.clocktower ?? createInitialClocktowerState())
+            : state.session,
+      };
+    }
 
     case 'HYDRATE_PROGRESS':
       // Load a saved session into memory without entering the room or saving.
@@ -351,28 +484,59 @@ interface GameProviderProps {
 export function GameProvider({ children }: GameProviderProps) {
   // A valid save is loaded (and migrated) at startup so the opening screen
   // can offer Resume. Nothing is written until the player enters a room.
-  const [state, dispatch] = useReducer(gameReducer, undefined, () => ({
-    game: initialGameState,
-    progress: getMeaningfulSavedProgress() ?? createInitialProgressState(),
-  }));
+  const [state, dispatch] = useReducer(gameReducer, undefined, () =>
+    createInitialReducerState(getMeaningfulSavedProgress() ?? createInitialProgressState())
+  );
 
+  const previewActive = state.preview !== null;
+
+  // The courtyard preview holds its progress in memory only: nothing is written.
   const saveProgress = useCallback(() => {
+    if (previewActive) return;
     if (storageAdapter.isAvailable()) {
       storageAdapter.saveProgress({
         ...state.progress,
         lastUpdatedAt: Date.now(),
       });
     }
-  }, [state.progress]);
+  }, [previewActive, state.progress]);
+
+  // The latest Clocktower inputs, including changes dispatched but not yet rendered,
+  // so two actions in one event cannot both report success.
+  const latestWorld = useRef({
+    clocktower: clocktowerOf(state),
+    session: state.session,
+    ctx: rulesContextOf(state),
+  });
+  useLayoutEffect(() => {
+    latestWorld.current = {
+      clocktower: clocktowerOf(state),
+      session: state.session,
+      ctx: rulesContextOf(state),
+    };
+  }, [state]);
+
+  // A confirmed reset or a new Checkpoint is saved at once, so closing the tab
+  // right after cannot lose it (Requirements 17.1, 17.3).
+  const saveAfterNextChange = useRef(false);
+
+  const dispatchWorldAction = useCallback((action: WorldAction): WorldOutcome => {
+    const { clocktower, session, ctx } = latestWorld.current;
+    const result = evaluateWorldAction(clocktower, session, ctx, action);
+    if (result.outcome.kind === 'changed') {
+      latestWorld.current = { clocktower: result.state, session: result.session, ctx };
+      if (result.outcome.saveNow) saveAfterNextChange.current = true;
+    }
+    // The reducer runs the same pure function and ignores anything but `changed`.
+    dispatch({ type: 'WORLD_ACTION', action });
+    return result.outcome;
+  }, []);
 
   const resetProgress = useCallback(() => {
     storageAdapter.clearProgress();
     dispatch({ type: 'RESET_CHALLENGE' });
   }, []);
 
-  // A confirmed reset is saved at once, so closing the tab right after
-  // cannot bring the old progress back.
-  const saveAfterNextChange = useRef(false);
   const resetRoom = useCallback((roomId: RoomId) => {
     saveAfterNextChange.current = true;
     dispatch({ type: 'RESET_ROOM', roomId });
@@ -390,12 +554,13 @@ export function GameProvider({ children }: GameProviderProps) {
     // Menu exits save explicitly.
     const phase = state.game.phase;
     if (phase !== 'challenge' && phase !== 'completion' && phase !== 'doors') return;
+    if (previewActive) return;
     const timeoutId = setTimeout(() => {
       saveProgress();
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [state.progress, state.game.phase, saveProgress]);
+  }, [state.progress, state.game.phase, saveProgress, previewActive]);
 
   const value: GameContextValue = {
     state: state.game,
@@ -404,6 +569,10 @@ export function GameProvider({ children }: GameProviderProps) {
     saveProgress,
     resetProgress,
     resetRoom,
+    clocktower: clocktowerOf(state),
+    world: state.session,
+    preview: previewActive,
+    dispatchWorldAction,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

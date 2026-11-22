@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from
 import { ReducedMotionProvider } from './context/ReducedMotionContext';
 import { GameProvider, useGame } from './context/GameContext';
 import { MascotProvider } from './context/MascotContext';
+import { DEV_FLAGS } from './registry/devFlags';
 import { AppShell } from './components/AppShell';
 import './App.css';
 
@@ -27,6 +28,14 @@ function ApplicationLoader() {
         if (cancelled) return;
         setRouter(() => module.default);
         dispatch({ type: 'LOADING_COMPLETE' });
+        // Development and test builds only: DEV_FLAGS is empty in production.
+        if (DEV_FLAGS.preview === 'courtyard') {
+          dispatch({ type: 'ENTER_COURTYARD_PREVIEW' });
+          // Drop the parameter so a reload loads normal progress and the menu.
+          const url = new URL(window.location.href);
+          url.searchParams.delete('preview');
+          window.history.replaceState(window.history.state, '', url);
+        }
       } catch (error: unknown) {
         if (cancelled) return;
         dispatch({

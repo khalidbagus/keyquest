@@ -13,4 +13,9 @@ export default defineConfig({
       ),
     },
   },
+  optimizeDeps: {
+    // Phaser is only reached through a dynamic import. Pre-bundling it stops the
+    // dev server from discovering it late and reloading the page mid-session.
+    include: ['phaser'],
+  },
 });

@@ -1,0 +1,21 @@
+/* The Play_Area keeps its own focus ring; canvas clipping lives on the inner holder. */
+.playArea {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 5 / 3;
+  min-height: 288px;
+  max-height: 480px;
+  border-radius: var(--border-radius-md);
+  background-color: #140d21;
+  /* Arrow keys move the Ghost, so never let the browser pan or zoom from a touch on the map. */
+  touch-action: manipulation;
+}
+
+.playArea:focus {
+  outline: none;
+}
+
+.playArea:focus-visible {
+  outline: var(--focus-outline-width) solid var(--color-focus);
+  outline-offset: var(--focus-outline-offset);
+}

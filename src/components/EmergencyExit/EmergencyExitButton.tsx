@@ -21,6 +21,9 @@ export function EmergencyExitButton() {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
+        // A press another handler already used (the bell dialog closing) or an
+        // auto-repeat of it never exits (Requirements 22.2, 22.6).
+        if (event.defaultPrevented || event.repeat) return;
         // Don't intercept Escape if a modal dialog is open
         const openDialog = document.querySelector('dialog[open]');
         if (openDialog) {

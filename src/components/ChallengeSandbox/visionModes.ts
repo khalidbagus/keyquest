@@ -18,6 +18,15 @@ export const CHECKOUT_VISION_MODES: readonly VisionModeDefinition[] = [
   { id: 'contrast', label: 'Focus & Contrast', hint: 'Shows contrast ratios and hidden focus rings.' },
 ];
 
+export const BELFRY_VISION_MODES: readonly VisionModeDefinition[] = [
+  { id: 'normal', label: 'Normal', hint: 'Explore with Tab, Enter, Space, mouse, or touch.' },
+  {
+    id: 'xray',
+    label: 'Focus X-Ray',
+    hint: 'Shows which element holds keyboard focus after each step.',
+  },
+];
+
 export const PANTRY_VISION_MODES: readonly VisionModeDefinition[] = [
   { id: 'normal', label: 'Normal', hint: 'Explore with Tab, Enter, Space, mouse, or touch.' },
   {

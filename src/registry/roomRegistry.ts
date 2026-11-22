@@ -18,7 +18,7 @@ export const INITIAL_CHECKOUT_STATE: CheckoutRoomState = {
   keyTaken: false,
 };
 
-export type CheckoutDefectType = Exclude<DefectType, 'color-only-ingredients'>;
+export type CheckoutDefectType = Exclude<DefectType, 'color-only-ingredients' | 'bell-dialog-focus'>;
 
 /** The four Checkout curses (the Pantry has its own). */
 const CHECKOUT_CURSES: readonly CheckoutDefectType[] = [

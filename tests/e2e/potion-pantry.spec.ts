@@ -104,7 +104,8 @@ test('brewing fills the cauldron, offers Bottle beside it, and clears the room',
   await page.getByTestId('completion-doors').click();
   await expect(page.getByRole('heading', { name: 'Choose a door' })).toBeFocused();
   await expect(page.getByTestId('door-pantry')).toHaveAttribute('data-state', 'cleared');
-  await expect(page.getByTestId('door-clocktower')).toHaveAttribute('data-state', 'coming-soon');
+  // The Clocktower is published (Task 26): the bottled potion opens its door.
+  await expect(page.getByTestId('door-clocktower')).toHaveAttribute('data-state', 'available');
   await expect(page.getByTestId('doors-progress')).toHaveText('2 of 3 rooms cleared');
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });

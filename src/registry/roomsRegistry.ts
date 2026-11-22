@@ -5,6 +5,7 @@
  */
 
 import type { DefectType, ProgressState, RoomId } from '../types';
+import { DEV_FLAGS } from './devFlags';
 
 export interface RoomDefinition {
   id: RoomId;
@@ -41,7 +42,7 @@ export const ROOMS: readonly RoomDefinition[] = [
     name: 'Clocktower Gate',
     goal: 'Ring three bells in order to bring the lights back.',
     reward: 'Bell rope',
-    built: false,
+    built: true,
   },
 ] as const;
 
@@ -54,16 +55,25 @@ export const ROOM_DEFECTS: Record<RoomId, readonly DefectType[]> = {
     'insufficient-contrast',
   ],
   pantry: ['color-only-ingredients'],
-  clocktower: [],
+  clocktower: ['bell-dialog-focus'],
 };
 
 export const ALL_DEFECT_TYPES: readonly DefectType[] = [
   ...ROOM_DEFECTS.checkout,
   ...ROOM_DEFECTS.pantry,
+  ...ROOM_DEFECTS.clocktower,
 ];
 
 export function getRoom(id: RoomId): RoomDefinition {
   return ROOMS.find((room) => room.id === id) ?? ROOMS[0]!;
+}
+
+/**
+ * A room can be entered when its `built` flag is set. Development and test
+ * builds can also mark a room built with `?built=<room>`; production ignores it.
+ */
+export function isRoomBuilt(id: RoomId): boolean {
+  return getRoom(id).built || DEV_FLAGS.built.has(id);
 }
 
 export function roomVerifiedCount(progress: ProgressState, room: RoomId): number {
@@ -80,6 +90,8 @@ export function isRoomCleared(progress: ProgressState, room: RoomId): boolean {
       return progress.checkout.keyTaken;
     case 'pantry':
       return progress.pantry.potionTaken;
+    case 'clocktower':
+      return progress.clocktower?.lightsRestored === true;
     default:
       return false;
   }
@@ -89,7 +101,11 @@ export function isRoomCleared(progress: ProgressState, room: RoomId): boolean {
  * Doors unlock from verified progress, not from a stored flag: the Pantry
  * opens once every Checkout curse is verified and the order earned the key.
  */
-export function isRoomUnlocked(progress: ProgressState, room: RoomId): boolean {
+export function isRoomUnlocked(
+  progress: ProgressState,
+  room: RoomId,
+  built: boolean = isRoomBuilt(room)
+): boolean {
   switch (room) {
     case 'checkout':
       return true;
@@ -99,7 +115,7 @@ export function isRoomUnlocked(progress: ProgressState, room: RoomId): boolean {
         progress.checkout.orderPlaced
       );
     case 'clocktower':
-      return getRoom('clocktower').built && isRoomCleared(progress, 'pantry');
+      return built && isRoomCleared(progress, 'pantry');
     default:
       return false;
   }
@@ -107,28 +123,52 @@ export function isRoomUnlocked(progress: ProgressState, room: RoomId): boolean {
 
 export type DoorState = 'cleared' | 'available' | 'locked' | 'coming-soon';
 
-export function getDoorState(progress: ProgressState, room: RoomId): DoorState {
-  if (!getRoom(room).built) return 'coming-soon';
-  if (!isRoomUnlocked(progress, room)) return 'locked';
+export function getDoorState(
+  progress: ProgressState,
+  room: RoomId,
+  built: boolean = isRoomBuilt(room)
+): DoorState {
+  if (!built) return 'coming-soon';
+  if (!isRoomUnlocked(progress, room, built)) return 'locked';
   return isRoomCleared(progress, room) ? 'cleared' : 'available';
 }
 
-/** What unlocks a locked door, in the player's terms. */
+/** What unlocks a built, locked door, in the player's terms. */
 export const DOOR_REQUIREMENT: Record<RoomId, string> = {
   checkout: '',
   pantry: 'Opens with the Pantry Key from the Midnight Checkout.',
+  clocktower: 'Needs the lantern potion from the Potion Pantry.',
+};
+
+/** Shown instead of the requirement while a room is not built. */
+export const DOOR_COMING_LATER: Record<RoomId, string> = {
+  checkout: '',
+  pantry: '',
   clocktower: 'Needs the lantern potion. This room opens in a later update.',
 };
 
-/** Every built room is cleared. */
-export function isAdventureComplete(progress: ProgressState): boolean {
-  return ROOMS.filter((r) => r.built).every((r) => isRoomCleared(progress, r.id));
+/** The door text for a state: the requirement, the coming-later line, or nothing. */
+export function getDoorRequirementText(room: RoomId, state: DoorState): string {
+  if (state === 'coming-soon') return DOOR_COMING_LATER[room];
+  if (state === 'locked') return DOOR_REQUIREMENT[room];
+  return '';
+}
+
+/**
+ * Every built room is cleared. While the Clocktower is built (including the
+ * development override), that needs the apothecary lights (Requirement 18.3).
+ */
+export function isAdventureComplete(
+  progress: ProgressState,
+  built: (id: RoomId) => boolean = isRoomBuilt
+): boolean {
+  return ROOMS.filter((r) => built(r.id)).every((r) => isRoomCleared(progress, r.id));
 }
 
 /** The first built room that is unlocked but not cleared, if any. */
 export function nextOpenRoom(progress: ProgressState): RoomId | null {
   const room = ROOMS.find(
-    (r) => r.built && isRoomUnlocked(progress, r.id) && !isRoomCleared(progress, r.id)
+    (r) => isRoomBuilt(r.id) && isRoomUnlocked(progress, r.id) && !isRoomCleared(progress, r.id)
   );
   return room?.id ?? null;
 }

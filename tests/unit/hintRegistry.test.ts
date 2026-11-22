@@ -27,8 +27,12 @@ const CHECKOUT_DEFECT_TYPES: DefectType[] = [
   'insufficient-contrast',
 ];
 
-/** Every curse across built rooms (Checkout + Pantry). */
-const ALL_DEFECT_TYPES: DefectType[] = [...CHECKOUT_DEFECT_TYPES, 'color-only-ingredients'];
+/** Every curse across the rooms (Checkout + Pantry + Clocktower bell, Task 21.1). */
+const ALL_DEFECT_TYPES: DefectType[] = [
+  ...CHECKOUT_DEFECT_TYPES,
+  'color-only-ingredients',
+  'bell-dialog-focus',
+];
 
 function makeDefectState(
   type: DefectType,
@@ -48,8 +52,8 @@ function makeDefectState(
 }
 
 describe('HINT_REGISTRY', () => {
-  it('contains exactly three hints per defect type (15 total)', () => {
-    expect(HINT_REGISTRY).toHaveLength(15);
+  it('contains exactly three hints per defect type (18 total)', () => {
+    expect(HINT_REGISTRY).toHaveLength(18);
 
     for (const defectType of ALL_DEFECT_TYPES) {
       const hints = getHintsForDefect(defectType);

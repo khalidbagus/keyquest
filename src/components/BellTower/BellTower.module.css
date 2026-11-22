@@ -1,0 +1,116 @@
+/* Bell tower (Challenge Sandbox). Solid backgrounds behind all text so contrast
+   checks stay deterministic. The focus defect is behavioral; focus rings use the
+   shell token so the only teaching defect here is focus entry and return. */
+
+.tower {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+  border-radius: var(--border-radius-md);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  font-weight: 700;
+  color: var(--color-text);
+  background-color: var(--color-secondary);
+  border: 1px solid var(--color-warning);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.bell[data-rung='true'] {
+  border-color: var(--color-success);
+}
+
+.bell:focus-visible,
+.ring:focus-visible,
+.cancel:focus-visible {
+  outline: 3px solid #7dd3fc;
+  outline-offset: 2px;
+}
+
+.bellGlyph {
+  font-size: 1.1rem;
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background-color: var(--color-bg-deep);
+  border: 2px solid var(--color-warning);
+  border-radius: 12px;
+}
+
+.dialog[hidden] {
+  display: none;
+}
+
+.dialogTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--color-text);
+}
+
+.dialogActions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.ring,
+.cancel {
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-5);
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ring {
+  color: #ffffff;
+  background-color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.cancel {
+  color: var(--color-text);
+  background-color: var(--color-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.xray {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--color-warning);
+  background-color: var(--color-bg-deep);
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bell,
+  .ring,
+  .cancel {
+    transition: none;
+  }
+}

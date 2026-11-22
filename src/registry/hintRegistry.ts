@@ -35,6 +35,7 @@ export const DEFECT_LABELS: Record<DefectType, string> = {
   'missing-accessible-name': 'Missing Accessible Name',
   'insufficient-contrast': 'Insufficient Contrast',
   'color-only-ingredients': 'Color-Only Ingredients',
+  'bell-dialog-focus': 'Bell Dialog Focus',
 };
 
 /** Label for each hint level, per design spec */
@@ -142,6 +143,24 @@ export const HINT_REGISTRY: readonly HintDefinition[] = [
     defectType: 'color-only-ingredients',
     level: 3,
     text: 'Each jar needs a visible name (and a symbol) that is also its button text. That gives everyone a non-color cue and gives screen readers a name — WCAG 1.4.1 Use of Color and 4.1.2 Name, Role, Value.',
+  },
+  // ============================================
+  // Bell Dialog Focus (Belfry bells) — WCAG 2.4.3
+  // ============================================
+  {
+    defectType: 'bell-dialog-focus',
+    level: 1,
+    text: 'Open a bell with the keyboard and watch where focus goes, then close the dialog and press Tab once.',
+  },
+  {
+    defectType: 'bell-dialog-focus',
+    level: 2,
+    text: 'The bell dialog opens without moving focus into it, and closing it drops focus to the top of the page instead of back on the bell you pressed.',
+  },
+  {
+    defectType: 'bell-dialog-focus',
+    level: 3,
+    text: 'A dialog should move focus inside when it opens and return focus to the control that opened it when it closes — WCAG 2.4.3 Focus Order. Pick the patch that does both.',
   },
 ];
 
